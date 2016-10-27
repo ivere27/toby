@@ -19,10 +19,15 @@ using v8::Local;
 using v8::Value;
 
 
+int add() {
+  static int i = 0;
+  return i++;
+}
+
 void AddMethod(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
-  static int i = 0;
-  args.GetReturnValue().Set(i++);
+
+  args.GetReturnValue().Set(add());
 }
 
 void HelloMethod(const FunctionCallbackInfo<Value>& args) {
