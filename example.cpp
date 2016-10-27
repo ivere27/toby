@@ -19,6 +19,12 @@ using v8::Local;
 using v8::Value;
 
 
+void AddMethod(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  static int i = 0;
+  args.GetReturnValue().Set(i++);
+}
+
 void HelloMethod(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   args.GetReturnValue().Set(String::NewFromUtf8(isolate, "world"));
@@ -26,9 +32,10 @@ void HelloMethod(const FunctionCallbackInfo<Value>& args) {
 
 void init(Local<Object> exports) {
   NODE_SET_METHOD(exports, "hello", HelloMethod);
+  NODE_SET_METHOD(exports, "add", AddMethod);
 }
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(addon, init)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(soy, init)
 }  // namespace demo
 
 void _node() {
