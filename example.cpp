@@ -1,3 +1,4 @@
+#include <cassert>
 #include <iostream>
 #include <dlfcn.h>
 #include <string>
@@ -6,7 +7,7 @@
 
 #include "node.h"
 
-namespace demo {
+namespace {
 
 using v8::FunctionCallbackInfo;
 using v8::Isolate;
@@ -14,7 +15,7 @@ using v8::Local;
 using v8::Object;
 using v8::Number;
 using v8::String;
-using v8::Handle;
+using v8::HandleScope;
 using v8::Local;
 using v8::Value;
 
@@ -35,17 +36,39 @@ void HelloMethod(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(String::NewFromUtf8(isolate, "world"));
 }
 
+void CallbackMethod(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  auto isolate = args.GetIsolate();
+  v8::Local<v8::Value> result;
+
+  if (args[0]->IsFunction()) {
+    std::vector<v8::Local<v8::Value>> argv;
+    v8::Local<v8::Value> argument = Number::New(isolate, add());
+    argv.push_back(argument);
+
+    auto method = args[0].As<v8::Function>();
+    result = node::MakeCallback(isolate,
+      isolate->GetCurrentContext()->Global(), method,
+      argv.size(), argv.data());
+  }
+  else {
+    result = Undefined(isolate);
+  }
+
+  args.GetReturnValue().Set(result);
+}
+
 void init(Local<Object> exports) {
   NODE_SET_METHOD(exports, "hello", HelloMethod);
   NODE_SET_METHOD(exports, "add", AddMethod);
+  NODE_SET_METHOD(exports, "callback", CallbackMethod);
 }
 
 NODE_MODULE_CONTEXT_AWARE_BUILTIN(soy, init)
-}  // namespace demo
+}  // namespace
 
 void _node() {
   int (*Start)(int, char **);
-  void *handle = dlopen("libnode.so.51", RTLD_LAZY | RTLD_NODELETE);
+  void *handle = dlopen("libnode.51.dylib", RTLD_LAZY | RTLD_NODELETE);
   Start = (int (*)(int, char **))dlsym(handle, "Start");
 
   int _argc = 2;
