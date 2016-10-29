@@ -9,6 +9,7 @@
 
 namespace {
 
+using node::AtExit;
 using v8::FunctionCallbackInfo;
 using v8::Isolate;
 using v8::Local;
@@ -57,7 +58,17 @@ void CallbackMethod(const v8::FunctionCallbackInfo<v8::Value>& args) {
   args.GetReturnValue().Set(result);
 }
 
+static void atExitCB(void* arg) {
+  Isolate* isolate = static_cast<Isolate*>(arg);
+  HandleScope handle_scope(isolate);
+  Local<Object> obj = Object::New(isolate);
+  assert(!obj.IsEmpty());  // Assert VM is still alive.
+  assert(obj->IsObject());
+  printf("bye~\n");
+}
+
 void init(Local<Object> exports) {
+  AtExit(atExitCB, exports->GetIsolate());
   NODE_SET_METHOD(exports, "hello", HelloMethod);
   NODE_SET_METHOD(exports, "add", AddMethod);
   NODE_SET_METHOD(exports, "callback", CallbackMethod);

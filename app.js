@@ -15,5 +15,10 @@ setTimeout(function(){
 },500);
 
 
-// dummy
-setInterval(function(){},1000*1000)
+var foo = 'foo';
+var bar = function(x) {
+  return `${foo} bar ${x}`;
+}
+
+
+//return; // exit the scope. atExitCB
