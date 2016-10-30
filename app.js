@@ -15,6 +15,9 @@ setTimeout(function(){
 },500);
 
 
+soy.compile()
+console.log(`__val = ${__val}`);
+
 var foo = 'foo';
 var bar = function(x) {
   return `${foo} bar ${x}`;

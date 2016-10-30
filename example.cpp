@@ -19,6 +19,9 @@ using v8::String;
 using v8::HandleScope;
 using v8::Local;
 using v8::Value;
+using v8::TryCatch;
+using v8::Context;
+using v8::Script;
 
 
 int add() {
@@ -58,6 +61,36 @@ void CallbackMethod(const v8::FunctionCallbackInfo<v8::Value>& args) {
   args.GetReturnValue().Set(result);
 }
 
+
+void CompileMethod(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  auto isolate = args.GetIsolate();
+  Local<Value> result;
+
+  const char* source = "function __c() {"
+                       "  this.x = 42;"
+                       "};"
+                       "var __val = 43;";
+
+  HandleScope handle_scope(isolate);
+  TryCatch try_catch(isolate);
+
+  Local<Context> context(isolate->GetCurrentContext());
+
+  Local<String> script = String::NewFromUtf8(isolate, source);
+  Local<Script> compiled_script;
+  if (!Script::Compile(context, script).ToLocal(&compiled_script)) {
+    String::Utf8Value error(try_catch.Exception());
+    return;
+  }
+
+  if (!compiled_script->Run(context).ToLocal(&result)) {
+    String::Utf8Value error(try_catch.Exception());
+    return;
+  }
+
+  args.GetReturnValue().Set(result);
+}
+
 static void atExitCB(void* arg) {
   Isolate* isolate = static_cast<Isolate*>(arg);
   HandleScope handle_scope(isolate);
@@ -72,6 +105,7 @@ void init(Local<Object> exports) {
   NODE_SET_METHOD(exports, "hello", HelloMethod);
   NODE_SET_METHOD(exports, "add", AddMethod);
   NODE_SET_METHOD(exports, "callback", CallbackMethod);
+  NODE_SET_METHOD(exports, "compile", CompileMethod);
 }
 
 NODE_MODULE_CONTEXT_AWARE_BUILTIN(soy, init)
