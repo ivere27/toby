@@ -22,7 +22,8 @@ using v8::Value;
 using v8::TryCatch;
 using v8::Context;
 using v8::Script;
-
+using v8::Function;
+using v8::NewStringType;
 
 int add() {
   static int i = 0;
@@ -91,6 +92,30 @@ void CompileMethod(const v8::FunctionCallbackInfo<v8::Value>& args) {
   args.GetReturnValue().Set(result);
 }
 
+static Local<Value> GetValue(v8::Isolate* isolate, Local<Context> context,
+                             Local<v8::Object> object, const char* property) {
+  Local<String> v8_str =
+      String::NewFromUtf8(isolate, property, NewStringType::kNormal)
+          .ToLocalChecked();
+  return object->Get(context, v8_str).ToLocalChecked();
+}
+
+void GlobalGetMethod(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  HandleScope scope(isolate);
+
+  auto context = isolate->GetCurrentContext();
+  Local<Object> global = context->Global();
+
+
+  Local<Value> value = GetValue(isolate, context, global, "bar");
+  if (value->IsFunction()) {
+    printf("c++ : bar is function\n");
+  }
+
+  args.GetReturnValue().Set(value->IsFunction());
+}
+
 static void atExitCB(void* arg) {
   Isolate* isolate = static_cast<Isolate*>(arg);
   HandleScope handle_scope(isolate);
@@ -106,6 +131,7 @@ void init(Local<Object> exports) {
   NODE_SET_METHOD(exports, "add", AddMethod);
   NODE_SET_METHOD(exports, "callback", CallbackMethod);
   NODE_SET_METHOD(exports, "compile", CompileMethod);
+  NODE_SET_METHOD(exports, "globalGet", GlobalGetMethod);
 }
 
 NODE_MODULE_CONTEXT_AWARE_BUILTIN(soy, init)
@@ -113,7 +139,7 @@ NODE_MODULE_CONTEXT_AWARE_BUILTIN(soy, init)
 
 void _node() {
   int (*Start)(int, char **);
-  void *handle = dlopen("libnode.51.dylib", RTLD_LAZY | RTLD_NODELETE);
+  void *handle = dlopen("libnode.so.51", RTLD_LAZY | RTLD_NODELETE);
   Start = (int (*)(int, char **))dlsym(handle, "Start");
 
   int _argc = 2;

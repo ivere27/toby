@@ -1,3 +1,5 @@
+'ust strict'
+
 const soy = process.binding('soy');
 console.log(soy.hello());
 
@@ -18,10 +20,12 @@ setTimeout(function(){
 soy.compile()
 console.log(`__val = ${__val}`);
 
+var num = 42;
 var foo = 'foo';
-var bar = function(x) {
+global.bar = function(x) {
   return `${foo} bar ${x}`;
 }
 
+console.log(soy.globalGet());
 
 //return; // exit the scope. atExitCB
