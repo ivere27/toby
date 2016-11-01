@@ -145,8 +145,8 @@ extern "C" void _node(const char* nodePath) {
 
   int _argc = 2;
   char* _argv[2];
-  _argv[0] = "a.out";
-  _argv[1] = "app.js";
+  _argv[0] = (char*)"a.out";
+  _argv[1] = (char*)"app.js";
 
   node::Start(_argc, _argv);
 }
