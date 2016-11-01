@@ -18,8 +18,9 @@ clang++ soy.cpp -c -o soy.o \
 && clang++ example.cpp \
 --std=c++11 \
 -I../node/deps/v8/include/ \
--I../node/src/ -g ./libnode.so.51 soy.o -ldl -lpthread \
-&& LD_LIBRARY_PATH=. ./a.out
+-I../node/src/ -g ./libnode.so.51 soy.o \
+-Wl,-rpath=. -ldl -lpthread \
+&& ./a.out
 ```
 
 mac
