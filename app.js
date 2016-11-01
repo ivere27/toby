@@ -28,4 +28,6 @@ global.bar = function(x) {
 
 console.log(soy.globalGet());
 
+setInterval(function(){},1000); // dummy event
+
 //return; // exit the scope. atExitCB
