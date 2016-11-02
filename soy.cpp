@@ -41,16 +41,16 @@ void HelloMethod(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(String::NewFromUtf8(isolate, "world"));
 }
 
-void CallbackMethod(const v8::FunctionCallbackInfo<v8::Value>& args) {
+void CallbackMethod(const FunctionCallbackInfo<Value>& args) {
   auto isolate = args.GetIsolate();
-  v8::Local<v8::Value> result;
+  Local<Value> result;
 
   if (args[0]->IsFunction()) {
-    std::vector<v8::Local<v8::Value>> argv;
-    v8::Local<v8::Value> argument = Number::New(isolate, add());
+    std::vector<Local<Value>> argv;
+    Local<Value> argument = Number::New(isolate, add());
     argv.push_back(argument);
 
-    auto method = args[0].As<v8::Function>();
+    auto method = args[0].As<Function>();
     result = node::MakeCallback(isolate,
       isolate->GetCurrentContext()->Global(), method,
       argv.size(), argv.data());
@@ -63,7 +63,7 @@ void CallbackMethod(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 
-void CompileMethod(const v8::FunctionCallbackInfo<v8::Value>& args) {
+void CompileMethod(const FunctionCallbackInfo<Value>& args) {
   auto isolate = args.GetIsolate();
   Local<Value> result;
 
@@ -92,8 +92,8 @@ void CompileMethod(const v8::FunctionCallbackInfo<v8::Value>& args) {
   args.GetReturnValue().Set(result);
 }
 
-static Local<Value> GetValue(v8::Isolate* isolate, Local<Context> context,
-                             Local<v8::Object> object, const char* property) {
+static Local<Value> GetValue(Isolate* isolate, Local<Context> context,
+                             Local<Object> object, const char* property) {
   Local<String> v8_str =
       String::NewFromUtf8(isolate, property, NewStringType::kNormal)
           .ToLocalChecked();
@@ -118,7 +118,7 @@ void GlobalGetMethod(const FunctionCallbackInfo<Value>& args) {
 
 void ToJsonMethod(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
-  v8::Local<v8::Value> result;
+  Local<Value> result;
   HandleScope scope(isolate);
 
   auto context = isolate->GetCurrentContext();
@@ -128,11 +128,11 @@ void ToJsonMethod(const FunctionCallbackInfo<Value>& args) {
     Local<Value> JSON = GetValue(isolate, context, global, "JSON");
     Local<Value> stringify = GetValue(isolate, context, JSON.As<Object>(), "stringify");
 
-    std::vector<v8::Local<v8::Value>> argv;
-    v8::Local<v8::Value> argument = args[0];
+    std::vector<Local<Value>> argv;
+    Local<Value> argument = args[0];
     argv.push_back(argument);
 
-    auto method = stringify.As<v8::Function>();
+    auto method = stringify.As<Function>();
     result = node::MakeCallback(isolate, global,
       method, argv.size(), argv.data());
   }
