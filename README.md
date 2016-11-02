@@ -15,12 +15,12 @@ clang++ soy.cpp -c -o soy.o \
 --std=c++11 -fPIC \
 -I../node/deps/v8/include/ \
 -I../node/src/ -g \
-&& clang++ example.cpp \
+&& clang++ example.cpp -o example \
 --std=c++11 \
 -I../node/deps/v8/include/ \
 -I../node/src/ -g ./libnode.so.51 soy.o \
 -Wl,-rpath=. -ldl -lpthread \
-&& ./a.out
+&& ./example
 ```
 
 mac

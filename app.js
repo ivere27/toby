@@ -28,6 +28,11 @@ global.bar = function(x) {
 
 console.log(soy.globalGet());
 
+
+var _string = soy.toJson({num, foo});
+console.log(`_string = ${_string}`);
+console.log(`type of _string = ${typeof _string}`);
+
 setInterval(function(){},1000); // dummy event
 
 //return; // exit the scope. atExitCB

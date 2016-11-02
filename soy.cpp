@@ -116,6 +116,31 @@ void GlobalGetMethod(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(value->IsFunction());
 }
 
+void ToJsonMethod(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  v8::Local<v8::Value> result;
+  HandleScope scope(isolate);
+
+  auto context = isolate->GetCurrentContext();
+  Local<Object> global = context->Global();
+
+  {
+    Local<Value> JSON = GetValue(isolate, context, global, "JSON");
+    Local<Value> stringify = GetValue(isolate, context, JSON.As<Object>(), "stringify");
+
+    std::vector<v8::Local<v8::Value>> argv;
+    v8::Local<v8::Value> argument = args[0];
+    argv.push_back(argument);
+
+    auto method = stringify.As<v8::Function>();
+    result = node::MakeCallback(isolate, global,
+      method, argv.size(), argv.data());
+  }
+
+  args.GetReturnValue().Set(result);
+}
+
+
 static void atExitCB(void* arg) {
   Isolate* isolate = static_cast<Isolate*>(arg);
   HandleScope handle_scope(isolate);
@@ -132,6 +157,8 @@ void init(Local<Object> exports) {
   NODE_SET_METHOD(exports, "callback", CallbackMethod);
   NODE_SET_METHOD(exports, "compile", CompileMethod);
   NODE_SET_METHOD(exports, "globalGet", GlobalGetMethod);
+  NODE_SET_METHOD(exports, "toJson", ToJsonMethod);
+
 }
 
 NODE_MODULE_CONTEXT_AWARE_BUILTIN(soy, init)

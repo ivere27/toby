@@ -11,6 +11,8 @@ int main(int argc, char *argv[]) {
   std::thread n(_node, "./libnode.so.51");
   n.detach();
 
+
+
   // dummy loop
   while(true) {
     usleep(1000*1000);
