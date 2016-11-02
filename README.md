@@ -11,14 +11,14 @@ make
 ## example
 linux
 ```
-clang++ soy.cpp -c -o soy.o \
+clang++ toby.cpp -c -o toby.o \
 --std=c++11 -fPIC \
 -I../node/deps/v8/include/ \
 -I../node/src/ -g \
 && clang++ example.cpp -o example \
 --std=c++11 \
 -I../node/deps/v8/include/ \
--I../node/src/ -g ./libnode.so.51 soy.o \
+-I../node/src/ -g ./libnode.so.51 toby.o \
 -Wl,-rpath=. -ldl -lpthread \
 && ./example
 ```

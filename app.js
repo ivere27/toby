@@ -1,15 +1,15 @@
 'ust strict'
 
-const soy = process.binding('soy');
-console.log(soy.hello());
+const toby = process.binding('toby');
+console.log(toby.hello());
 
-console.log(soy.add());
-console.log(soy.add());
+console.log(toby.add());
+console.log(toby.add());
 
-console.log(soy.callback());
+console.log(toby.callback());
 
 setTimeout(function(){
-  var ret = soy.callback(function(x){
+  var ret = toby.callback(function(x){
     console.log(`${x} in callback`);
     return x;
   });
@@ -17,7 +17,7 @@ setTimeout(function(){
 },500);
 
 
-soy.compile()
+toby.compile()
 console.log(`__val = ${__val}`);
 
 var num = 42;
@@ -26,15 +26,15 @@ global.bar = function(x) {
   return `${foo} bar ${x}`;
 }
 
-console.log(soy.globalGet());
+console.log(toby.globalGet());
 
 
-var _string = soy.toJson({num, foo});
+var _string = toby.toJson({num, foo});
 console.log(`_string = ${_string}`);
 console.log(`type of _string = ${typeof _string}`);
 
 
-var _value = soy.setValue('key', {num, foo});
+var _value = toby.setValue('key', {num, foo});
 console.log(`value from example.cpp = ${_value}`);
 
 

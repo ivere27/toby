@@ -201,7 +201,7 @@ void init(Local<Object> exports) {
 
 }
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(soy, init)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(toby, init)
 }  // namespace
 
 
