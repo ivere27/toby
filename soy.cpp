@@ -7,6 +7,8 @@
 
 #include "node.h"
 
+extern "C" char* _onSetValue(const char* key,const char* value);
+
 namespace {
 
 using node::AtExit;
@@ -140,6 +142,40 @@ void ToJsonMethod(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(result);
 }
 
+void SetValueMethod(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  Local<Value> result;
+  HandleScope scope(isolate);
+
+  auto context = isolate->GetCurrentContext();
+  Local<Object> global = context->Global();
+
+  {
+    Local<Value> JSON = GetValue(isolate, context, global, "JSON");
+    Local<Value> stringify = GetValue(isolate, context, JSON.As<Object>(), "stringify");
+
+    std::vector<Local<Value>> argv;
+    Local<Value> argument = args[1];
+    argv.push_back(argument);
+
+    auto method = stringify.As<Function>();
+    result = node::MakeCallback(isolate, global,
+      method, argv.size(), argv.data());
+
+    v8::String::Utf8Value key(args[0]);
+    const char* c_key = *key;
+
+    v8::String::Utf8Value value(result);
+    const char* c_value = *value;
+
+    char* ret = _onSetValue(c_key, c_value);
+
+    result = String::NewFromUtf8(isolate, ret, NewStringType::kNormal).ToLocalChecked();
+  }
+
+
+  args.GetReturnValue().Set(result);
+}
 
 static void atExitCB(void* arg) {
   Isolate* isolate = static_cast<Isolate*>(arg);
@@ -158,6 +194,10 @@ void init(Local<Object> exports) {
   NODE_SET_METHOD(exports, "compile", CompileMethod);
   NODE_SET_METHOD(exports, "globalGet", GlobalGetMethod);
   NODE_SET_METHOD(exports, "toJson", ToJsonMethod);
+
+  NODE_SET_METHOD(exports, "setValue", SetValueMethod);
+
+
 
 }
 

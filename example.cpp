@@ -4,8 +4,17 @@
 #include <string>
 #include <unistd.h>
 #include <thread>
+#include <functional>
+
+using namespace std;
+
 
 extern "C" void _node(const char* nodePath);
+extern "C" char* _onSetValue(const char* key, const char* value) {
+  cout << "** from javascript. key = " << key << " , value = " << value;
+  cout << endl << flush;
+  return (char*)"from example.cpp";
+}
 
 int main(int argc, char *argv[]) {
   std::thread n(_node, "./libnode.so.51");
