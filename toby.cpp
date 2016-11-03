@@ -4,6 +4,7 @@
 #include <string>
 #include <unistd.h>
 #include <thread>
+#include <cstring>
 
 #include "node.h"
 
@@ -96,6 +97,37 @@ extern "C" bool tobyJSCompile(void* arg, const char* source) {
   }
 
   // FIXME: returns 'result' to the host?
+  return true;
+}
+
+extern "C" bool tobyJSCall(void* arg, const char* name, const char* value, char* r) {
+  Isolate* isolate = static_cast<Isolate*>(arg);
+
+  auto context = isolate->GetCurrentContext();
+  auto global = context->Global();
+
+  Local<Value> result;
+  auto func = GetValue(isolate, context, global, name);
+
+  if (func->IsFunction()) {
+    std::vector<Local<Value>> argv;
+    Local<Value> argument = String::NewFromUtf8(isolate, value);
+    argv.push_back(argument);
+
+    auto method = func.As<Function>();
+    result = node::MakeCallback(isolate,
+      isolate->GetCurrentContext()->Global(), method,
+      argv.size(), argv.data());
+  }
+  else {
+    result = Undefined(isolate);
+    return false;
+  }
+
+  result = Stringify(isolate, context, result);
+  v8::String::Utf8Value ret(result);
+
+  strcpy(r, *ret);
   return true;
 }
 

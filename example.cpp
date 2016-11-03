@@ -11,17 +11,25 @@ using namespace std;
 
 extern "C" void toby(const char* nodePath);
 extern "C" bool tobyJSCompile(void* isolate, const char* source);
+extern "C" bool tobyJSCall(void* arg, const char* name, const char* value, char* r);
 
 extern "C" void tobyOnLoad(void* isolate) {
   cout << "\e[32m" << "** topyOnLoad : " << isolate << endl;
 
   // test source
-  const char* source = "function __c() {"
+  const char* source = "function __c(y) {"
                        "  this.x = 42;"
+                       "  this.y = y;"
+                       "  return \":)\";"
                        "};"
                        "var __val = 43;";
 
-  cout << "** tobyJSCompile : " << tobyJSCompile(isolate, source) << "\e[0m" << endl << flush;
+  cout << "** tobyJSCompile : " << tobyJSCompile(isolate, source) << endl;
+
+  char* ret = new char[1024];
+  tobyJSCall(isolate, "__c", "2", ret);
+  cout << "** tobyJSCall : " << ret;
+  cout << "\e[0m" << endl << flush;
 }
 
 extern "C" char* tobyHostCall(const char* name, const char* value) {
