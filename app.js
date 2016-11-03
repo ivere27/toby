@@ -23,9 +23,6 @@ global.bar = function(x) {
   return `${foo} bar ${x}`;
 }
 
-console.log(toby.globalGet());
-
-
 var result = toby.call('key', {num, foo});
 console.log(`result from toby.call = ${result}`);
 

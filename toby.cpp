@@ -105,22 +105,6 @@ extern "C" bool tobyJSCompile(void* arg, const char* source) {
   return true;
 }
 
-void GlobalGetMethod(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-  HandleScope scope(isolate);
-
-  auto context = isolate->GetCurrentContext();
-  Local<Object> global = context->Global();
-
-
-  Local<Value> value = GetValue(isolate, context, global, "bar");
-  if (value->IsFunction()) {
-    printf("c++ : bar is function\n");
-  }
-
-  args.GetReturnValue().Set(value->IsFunction());
-}
-
 void CallMethod(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   HandleScope scope(isolate);
@@ -158,7 +142,6 @@ void init(Local<Object> exports) {
 
   NODE_SET_METHOD(exports, "hello", HelloMethod);
   NODE_SET_METHOD(exports, "callback", CallbackMethod);
-  NODE_SET_METHOD(exports, "globalGet", GlobalGetMethod);
 
   NODE_SET_METHOD(exports, "call", CallMethod);
 
