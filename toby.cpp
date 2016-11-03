@@ -7,7 +7,8 @@
 
 #include "node.h"
 
-extern "C" char* _onSetValue(const char* key,const char* value);
+extern "C" void tobyOnLoad(void* isolate);
+extern "C" char* tobyCall(const char* key, const char* value);
 
 namespace {
 
@@ -118,41 +119,17 @@ void GlobalGetMethod(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(value->IsFunction());
 }
 
-void ToJsonMethod(const FunctionCallbackInfo<Value>& args) {
+void CallMethod(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
-  Local<Value> result;
   HandleScope scope(isolate);
+  Local<Value> result;
 
   auto context = isolate->GetCurrentContext();
-  Local<Object> global = context->Global();
+  auto global = context->Global();
 
   {
-    Local<Value> JSON = GetValue(isolate, context, global, "JSON");
-    Local<Value> stringify = GetValue(isolate, context, JSON.As<Object>(), "stringify");
-
-    std::vector<Local<Value>> argv;
-    Local<Value> argument = args[0];
-    argv.push_back(argument);
-
-    auto method = stringify.As<Function>();
-    result = node::MakeCallback(isolate, global,
-      method, argv.size(), argv.data());
-  }
-
-  args.GetReturnValue().Set(result);
-}
-
-void SetValueMethod(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-  Local<Value> result;
-  HandleScope scope(isolate);
-
-  auto context = isolate->GetCurrentContext();
-  Local<Object> global = context->Global();
-
-  {
-    Local<Value> JSON = GetValue(isolate, context, global, "JSON");
-    Local<Value> stringify = GetValue(isolate, context, JSON.As<Object>(), "stringify");
+    auto JSON = GetValue(isolate, context, global, "JSON");
+    auto stringify = GetValue(isolate, context, JSON.As<Object>(), "stringify");
 
     std::vector<Local<Value>> argv;
     Local<Value> argument = args[1];
@@ -168,11 +145,9 @@ void SetValueMethod(const FunctionCallbackInfo<Value>& args) {
     v8::String::Utf8Value value(result);
     const char* c_value = *value;
 
-    char* ret = _onSetValue(c_key, c_value);
-
+    char* ret = tobyCall(c_key, c_value);
     result = String::NewFromUtf8(isolate, ret, NewStringType::kNormal).ToLocalChecked();
   }
-
 
   args.GetReturnValue().Set(result);
 }
@@ -183,29 +158,27 @@ static void atExitCB(void* arg) {
   Local<Object> obj = Object::New(isolate);
   assert(!obj.IsEmpty());  // Assert VM is still alive.
   assert(obj->IsObject());
-  printf("bye~\n");
 }
 
 void init(Local<Object> exports) {
   AtExit(atExitCB, exports->GetIsolate());
+
   NODE_SET_METHOD(exports, "hello", HelloMethod);
   NODE_SET_METHOD(exports, "add", AddMethod);
   NODE_SET_METHOD(exports, "callback", CallbackMethod);
   NODE_SET_METHOD(exports, "compile", CompileMethod);
   NODE_SET_METHOD(exports, "globalGet", GlobalGetMethod);
-  NODE_SET_METHOD(exports, "toJson", ToJsonMethod);
 
-  NODE_SET_METHOD(exports, "setValue", SetValueMethod);
+  NODE_SET_METHOD(exports, "call", CallMethod);
 
-
-
+  tobyOnLoad(exports->GetIsolate());
 }
 
 NODE_MODULE_CONTEXT_AWARE_BUILTIN(toby, init)
 }  // namespace
 
 
-extern "C" void _node(const char* nodePath) {
+extern "C" void toby(const char* nodePath) {
   int (*Start)(int, char **);
   void *handle = dlopen(nodePath, RTLD_LAZY | RTLD_NODELETE);
   Start = (int (*)(int, char **))dlsym(handle, "Start");

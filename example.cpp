@@ -9,15 +9,19 @@
 using namespace std;
 
 
-extern "C" void _node(const char* nodePath);
-extern "C" char* _onSetValue(const char* key, const char* value) {
-  cout << "** from javascript. key = " << key << " , value = " << value;
+extern "C" void toby(const char* nodePath);
+extern "C" void tobyOnLoad(void* isolate) {
+  cout << "\e[32m" << "** topyOnLoad " << isolate << "\e[0m" << endl << flush;
+}
+extern "C" char* tobyCall(const char* key, const char* value) {
+  cout << "\e[93m" << "** from javascript. key = " << key;
+  cout << " , value = " << value << "\e[0m";
   cout << endl << flush;
   return (char*)"from example.cpp";
 }
 
 int main(int argc, char *argv[]) {
-  std::thread n(_node, "./libnode.so.51");
+  std::thread n(toby, "./libnode.so.51");
   n.detach();
 
 

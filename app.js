@@ -29,13 +29,8 @@ global.bar = function(x) {
 console.log(toby.globalGet());
 
 
-var _string = toby.toJson({num, foo});
-console.log(`_string = ${_string}`);
-console.log(`type of _string = ${typeof _string}`);
-
-
-var _value = toby.setValue('key', {num, foo});
-console.log(`value from example.cpp = ${_value}`);
+var result = toby.call('key', {num, foo});
+console.log(`result from toby.call = ${result}`);
 
 
 //setInterval(function(){},1000); // dummy event
