@@ -8,7 +8,7 @@
 #include "node.h"
 
 extern "C" void tobyOnLoad(void* isolate);
-extern "C" char* tobyCall(const char* key, const char* value);
+extern "C" char* tobyHostCall(const char* key, const char* value);
 
 namespace {
 
@@ -96,11 +96,10 @@ extern "C" bool tobyJSCompile(void* arg, const char* source) {
   }
 
   // FIXME: returns 'result' to the host?
-
   return true;
 }
 
-void CallMethod(const FunctionCallbackInfo<Value>& args) {
+void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   HandleScope scope(isolate);
   Local<Value> result;
@@ -109,6 +108,7 @@ void CallMethod(const FunctionCallbackInfo<Value>& args) {
   auto global = context->Global();
 
   {
+    // FIXME : better way to serialize/deserialize?
     result = Stringify(isolate, context, args[1]);
 
     v8::String::Utf8Value key(args[0]);
@@ -117,7 +117,7 @@ void CallMethod(const FunctionCallbackInfo<Value>& args) {
     v8::String::Utf8Value value(result);
     const char* c_value = *value;
 
-    char* ret = tobyCall(c_key, c_value);
+    char* ret = tobyHostCall(c_key, c_value);
     result = String::NewFromUtf8(isolate, ret, NewStringType::kNormal).ToLocalChecked();
   }
 
@@ -136,8 +136,7 @@ void init(Local<Object> exports) {
   AtExit(atExitCB, exports->GetIsolate());
 
   NODE_SET_METHOD(exports, "callback", CallbackMethod);
-
-  NODE_SET_METHOD(exports, "call", CallMethod);
+  NODE_SET_METHOD(exports, "hostCall", HostCallMethod);
 
   tobyOnLoad(exports->GetIsolate());
 }

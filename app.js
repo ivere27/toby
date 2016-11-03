@@ -21,8 +21,8 @@ global.bar = function(x) {
   return `${foo} bar ${x}`;
 }
 
-var result = toby.call('key', {num, foo});
-console.log(`result from toby.call = ${result}`);
+var result = toby.hostCall('dory', {num, foo});
+console.log(`toby.hostCall() = ${result}`);
 
 
 //setInterval(function(){},1000); // dummy event

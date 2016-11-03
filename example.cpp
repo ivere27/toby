@@ -23,12 +23,14 @@ extern "C" void tobyOnLoad(void* isolate) {
 
   cout << "** tobyJSCompile : " << tobyJSCompile(isolate, source) << "\e[0m" << endl << flush;
 }
-extern "C" char* tobyCall(const char* key, const char* value) {
-  cout << "\e[93m" << "** from javascript. key = " << key;
+
+extern "C" char* tobyHostCall(const char* name, const char* value) {
+  cout << "\e[93m" << "** from javascript. name = " << name;
   cout << " , value = " << value << "\e[0m";
   cout << endl << flush;
-  return (char*)"from example.cpp";
+  return (char*)"hi there";
 }
+
 
 int main(int argc, char *argv[]) {
   std::thread n(toby, "./libnode.so.51");
