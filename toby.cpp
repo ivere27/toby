@@ -33,6 +33,31 @@ int add() {
   return i++;
 }
 
+static Local<Value> GetValue(Isolate* isolate, Local<Context> context,
+                             Local<Object> object, const char* property) {
+  Local<String> v8_str =
+      String::NewFromUtf8(isolate, property, NewStringType::kNormal)
+          .ToLocalChecked();
+  return object->Get(context, v8_str).ToLocalChecked();
+}
+
+static Local<Value> Stringify(Isolate* isolate, Local<Context> context,
+                             Local<Value> object) {
+  auto global = context->Global();
+
+  Local<Value> result;
+  auto JSON = GetValue(isolate, context, global, "JSON");
+  auto stringify = GetValue(isolate, context, JSON.As<Object>(), "stringify");
+
+  std::vector<Local<Value>> argv;
+  argv.push_back(object);
+
+  auto method = stringify.As<Function>();
+  result = node::MakeCallback(isolate, global, method, argv.size(), argv.data());
+
+  return result;
+}
+
 void AddMethod(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
 
@@ -95,14 +120,6 @@ void CompileMethod(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(result);
 }
 
-static Local<Value> GetValue(Isolate* isolate, Local<Context> context,
-                             Local<Object> object, const char* property) {
-  Local<String> v8_str =
-      String::NewFromUtf8(isolate, property, NewStringType::kNormal)
-          .ToLocalChecked();
-  return object->Get(context, v8_str).ToLocalChecked();
-}
-
 void GlobalGetMethod(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   HandleScope scope(isolate);
@@ -128,16 +145,7 @@ void CallMethod(const FunctionCallbackInfo<Value>& args) {
   auto global = context->Global();
 
   {
-    auto JSON = GetValue(isolate, context, global, "JSON");
-    auto stringify = GetValue(isolate, context, JSON.As<Object>(), "stringify");
-
-    std::vector<Local<Value>> argv;
-    Local<Value> argument = args[1];
-    argv.push_back(argument);
-
-    auto method = stringify.As<Function>();
-    result = node::MakeCallback(isolate, global,
-      method, argv.size(), argv.data());
+    result = Stringify(isolate, context, args[1]);
 
     v8::String::Utf8Value key(args[0]);
     const char* c_key = *key;
