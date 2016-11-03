@@ -1,7 +1,5 @@
 'ust strict'
-
 const toby = process.binding('toby');
-console.log(toby.hello());
 
 console.log(toby.callback());
 

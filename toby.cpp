@@ -53,11 +53,6 @@ static Local<Value> Stringify(Isolate* isolate, Local<Context> context,
   return result;
 }
 
-void HelloMethod(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-  args.GetReturnValue().Set(String::NewFromUtf8(isolate, "world"));
-}
-
 void CallbackMethod(const FunctionCallbackInfo<Value>& args) {
   auto isolate = args.GetIsolate();
   Local<Value> result;
@@ -140,7 +135,6 @@ static void atExitCB(void* arg) {
 void init(Local<Object> exports) {
   AtExit(atExitCB, exports->GetIsolate());
 
-  NODE_SET_METHOD(exports, "hello", HelloMethod);
   NODE_SET_METHOD(exports, "callback", CallbackMethod);
 
   NODE_SET_METHOD(exports, "call", CallMethod);
