@@ -3,9 +3,6 @@
 const toby = process.binding('toby');
 console.log(toby.hello());
 
-console.log(toby.add());
-console.log(toby.add());
-
 console.log(toby.callback());
 
 setTimeout(function(){

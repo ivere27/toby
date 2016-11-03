@@ -28,11 +28,6 @@ using v8::Script;
 using v8::Function;
 using v8::NewStringType;
 
-int add() {
-  static int i = 0;
-  return i++;
-}
-
 static Local<Value> GetValue(Isolate* isolate, Local<Context> context,
                              Local<Object> object, const char* property) {
   Local<String> v8_str =
@@ -58,12 +53,6 @@ static Local<Value> Stringify(Isolate* isolate, Local<Context> context,
   return result;
 }
 
-void AddMethod(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-
-  args.GetReturnValue().Set(add());
-}
-
 void HelloMethod(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   args.GetReturnValue().Set(String::NewFromUtf8(isolate, "world"));
@@ -75,7 +64,7 @@ void CallbackMethod(const FunctionCallbackInfo<Value>& args) {
 
   if (args[0]->IsFunction()) {
     std::vector<Local<Value>> argv;
-    Local<Value> argument = Number::New(isolate, add());
+    Local<Value> argument = Number::New(isolate, 0);
     argv.push_back(argument);
 
     auto method = args[0].As<Function>();
@@ -168,7 +157,6 @@ void init(Local<Object> exports) {
   AtExit(atExitCB, exports->GetIsolate());
 
   NODE_SET_METHOD(exports, "hello", HelloMethod);
-  NODE_SET_METHOD(exports, "add", AddMethod);
   NODE_SET_METHOD(exports, "callback", CallbackMethod);
   NODE_SET_METHOD(exports, "globalGet", GlobalGetMethod);
 
