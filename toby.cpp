@@ -90,15 +90,9 @@ void CallbackMethod(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(result);
 }
 
-
-void CompileMethod(const FunctionCallbackInfo<Value>& args) {
-  auto isolate = args.GetIsolate();
+extern "C" bool tobyJSCompile(void* arg, const char* source) {
+  Isolate* isolate = static_cast<Isolate*>(arg);
   Local<Value> result;
-
-  const char* source = "function __c() {"
-                       "  this.x = 42;"
-                       "};"
-                       "var __val = 43;";
 
   HandleScope handle_scope(isolate);
   TryCatch try_catch(isolate);
@@ -109,15 +103,17 @@ void CompileMethod(const FunctionCallbackInfo<Value>& args) {
   Local<Script> compiled_script;
   if (!Script::Compile(context, script).ToLocal(&compiled_script)) {
     String::Utf8Value error(try_catch.Exception());
-    return;
+    return false;
   }
 
   if (!compiled_script->Run(context).ToLocal(&result)) {
     String::Utf8Value error(try_catch.Exception());
-    return;
+    return false;
   }
 
-  args.GetReturnValue().Set(result);
+  // FIXME: returns 'result' to the host?
+
+  return true;
 }
 
 void GlobalGetMethod(const FunctionCallbackInfo<Value>& args) {
@@ -174,7 +170,6 @@ void init(Local<Object> exports) {
   NODE_SET_METHOD(exports, "hello", HelloMethod);
   NODE_SET_METHOD(exports, "add", AddMethod);
   NODE_SET_METHOD(exports, "callback", CallbackMethod);
-  NODE_SET_METHOD(exports, "compile", CompileMethod);
   NODE_SET_METHOD(exports, "globalGet", GlobalGetMethod);
 
   NODE_SET_METHOD(exports, "call", CallMethod);

@@ -10,8 +10,18 @@ using namespace std;
 
 
 extern "C" void toby(const char* nodePath);
+extern "C" bool tobyJSCompile(void* isolate, const char* source);
+
 extern "C" void tobyOnLoad(void* isolate) {
-  cout << "\e[32m" << "** topyOnLoad " << isolate << "\e[0m" << endl << flush;
+  cout << "\e[32m" << "** topyOnLoad : " << isolate << endl;
+
+  // test source
+  const char* source = "function __c() {"
+                       "  this.x = 42;"
+                       "};"
+                       "var __val = 43;";
+
+  cout << "** tobyJSCompile : " << tobyJSCompile(isolate, source) << "\e[0m" << endl << flush;
 }
 extern "C" char* tobyCall(const char* key, const char* value) {
   cout << "\e[93m" << "** from javascript. key = " << key;

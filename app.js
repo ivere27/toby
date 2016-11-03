@@ -17,7 +17,7 @@ setTimeout(function(){
 },500);
 
 
-toby.compile()
+// assgined from example.cpp
 console.log(`__val = ${__val}`);
 
 var num = 42;
