@@ -176,8 +176,7 @@ void init(Local<Object> exports) {
 NODE_MODULE_CONTEXT_AWARE_BUILTIN(toby, init)
 }  // namespace
 
-
-extern "C" void toby(const char* nodePath) {
+static void _node(const char* nodePath) {
   int (*Start)(int, char **);
   void *handle = dlopen(nodePath, RTLD_LAZY | RTLD_NODELETE);
   Start = (int (*)(int, char **))dlsym(handle, "Start");
@@ -188,4 +187,9 @@ extern "C" void toby(const char* nodePath) {
   _argv[1] = (char*)"app.js";
 
   node::Start(_argc, _argv);
+}
+
+extern "C" void toby(const char* nodePath) {
+  std::thread n(_node, nodePath);
+  n.detach();
 }

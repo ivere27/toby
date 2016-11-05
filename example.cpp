@@ -41,10 +41,7 @@ extern "C" char* tobyHostCall(const char* name, const char* value) {
 
 
 int main(int argc, char *argv[]) {
-  std::thread n(toby, "./libnode.so.51");
-  n.detach();
-
-
+  toby("./libnode.so.51");
 
   // dummy loop
   while(true) {
