@@ -34,5 +34,5 @@ clang++ toby.cpp -c -o toby.o \
 -I../node/deps/v8/include/ \
 -I../node/src/ -g ./libnode.51.dylib toby.o \
 -ldl -lpthread \
-&& DYLD_LIBRARY_PATH=. ./a.out
+&& DYLD_LIBRARY_PATH=. ./example
 ```
