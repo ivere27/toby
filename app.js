@@ -1,5 +1,4 @@
 'ust strict'
-const toby = process.binding('toby');
 
 console.log(toby.callback());
 

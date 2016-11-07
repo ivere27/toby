@@ -6,10 +6,11 @@
 #include <thread>
 #include <cstring>
 
+#include <vector>
 #include "node.h"
 
 extern "C" void tobyOnLoad(void* isolate);
-extern "C" char* tobyHostCall(const char* key, const char* value);
+extern "C" char* tobyHostCall(void* isolate, const char* key, const char* value);
 
 namespace {
 
@@ -54,7 +55,7 @@ static Local<Value> Stringify(Isolate* isolate, Local<Context> context,
   return result;
 }
 
-void CallbackMethod(const FunctionCallbackInfo<Value>& args) {
+static void CallbackMethod(const FunctionCallbackInfo<Value>& args) {
   auto isolate = args.GetIsolate();
   Local<Value> result;
 
@@ -75,7 +76,7 @@ void CallbackMethod(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(result);
 }
 
-extern "C" bool tobyJSCompile(void* arg, const char* source) {
+extern "C" char* tobyJSCompile(void* arg, const char* source) {
   Isolate* isolate = static_cast<Isolate*>(arg);
   Local<Value> result;
 
@@ -88,20 +89,24 @@ extern "C" bool tobyJSCompile(void* arg, const char* source) {
   Local<Script> compiled_script;
   if (!Script::Compile(context, script).ToLocal(&compiled_script)) {
     String::Utf8Value error(try_catch.Exception());
-    return false;
+    return NULL;
   }
 
   if (!compiled_script->Run(context).ToLocal(&result)) {
     String::Utf8Value error(try_catch.Exception());
-    return false;
+    return NULL;
   }
 
-  // FIXME: returns 'result' to the host?
-  return true;
+  result = Stringify(isolate, context, result);
+  v8::String::Utf8Value ret(result);
+
+  char* data = new char[ret.length()];
+  strcpy(data, *ret);
+  return data;
 }
 
-extern "C" bool tobyJSCall(void* arg, const char* name, const char* value, char* r) {
-  Isolate* isolate = static_cast<Isolate*>(arg);
+extern "C" char* tobyJSCall(void* _isolate, const char* name, const char* value) {
+  Isolate* isolate = static_cast<Isolate*>(_isolate);
 
   auto context = isolate->GetCurrentContext();
   auto global = context->Global();
@@ -121,17 +126,18 @@ extern "C" bool tobyJSCall(void* arg, const char* name, const char* value, char*
   }
   else {
     result = Undefined(isolate);
-    return false;
+    return NULL;
   }
 
   result = Stringify(isolate, context, result);
   v8::String::Utf8Value ret(result);
 
-  strcpy(r, *ret);
-  return true;
+  char* data = new char[ret.length()];
+  strcpy(data, *ret);
+  return data;
 }
 
-void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
+static void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   HandleScope scope(isolate);
   Local<Value> result;
@@ -149,7 +155,7 @@ void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
     v8::String::Utf8Value value(result);
     const char* c_value = *value;
 
-    char* ret = tobyHostCall(c_key, c_value);
+    char* ret = tobyHostCall(isolate, c_key, c_value);
     result = String::NewFromUtf8(isolate, ret, NewStringType::kNormal).ToLocalChecked();
   }
 
@@ -164,27 +170,31 @@ static void atExitCB(void* arg) {
   assert(obj->IsObject());
 }
 
-void init(Local<Object> exports) {
+static void init(Local<Object> exports) {
   AtExit(atExitCB, exports->GetIsolate());
 
   NODE_SET_METHOD(exports, "callback", CallbackMethod);
   NODE_SET_METHOD(exports, "hostCall", HostCallMethod);
 
+  // call the host's OnLoad()
   tobyOnLoad(exports->GetIsolate());
 }
 
 NODE_MODULE_CONTEXT_AWARE_BUILTIN(toby, init)
 }  // namespace
 
+
 static void _node(const char* nodePath) {
   int (*Start)(int, char **);
   void *handle = dlopen(nodePath, RTLD_LAZY | RTLD_NODELETE);
   Start = (int (*)(int, char **))dlsym(handle, "Start");
 
-  int _argc = 2;
-  char* _argv[2];
-  _argv[0] = (char*)"a.out";
-  _argv[1] = (char*)"app.js";
+  int _argc = 3;
+  char* _argv[_argc];
+
+  _argv[0] = (char*)"./a.out";
+  _argv[1] = (char*)"-e";
+  _argv[2] = (char*)"const toby = process.binding('toby');require('./app.js');";
 
   node::Start(_argc, _argv);
 }

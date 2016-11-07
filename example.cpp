@@ -3,40 +3,50 @@
 #include <dlfcn.h>
 #include <string>
 #include <unistd.h>
-#include <thread>
-#include <functional>
+#include <cstring>
 
 using namespace std;
 
-
 extern "C" void toby(const char* nodePath);
-extern "C" bool tobyJSCompile(void* isolate, const char* source);
-extern "C" bool tobyJSCall(void* arg, const char* name, const char* value, char* r);
+extern "C" char* tobyJSCompile(void* isolate, const char* source);
+extern "C" char* tobyJSCall(void* isolate, const char* name, const char* value);
 
 extern "C" void tobyOnLoad(void* isolate) {
   cout << "\e[32m" << "** topyOnLoad : " << isolate << endl;
 
-  // test source
+  // custom source
   const char* source = "function __c(y) {"
                        "  this.x = 42;"
                        "  this.y = y;"
-                       "  return \":)\";"
+                       "  return y ? y : \":)\";"
                        "};"
-                       "var __val = 43;";
+                       "var __val = 43;"
+                       "__c(__val);";
 
-  cout << "** tobyJSCompile : " << tobyJSCompile(isolate, source) << endl;
+  char* data;
+  data = tobyJSCompile(isolate, source);
+  if (data != NULL) {
+    cout << "** tobyJSCompile : " << data << endl;
+    free(data);
+  }
 
-  char* ret = new char[1024];
-  tobyJSCall(isolate, "__c", "2", ret);
-  cout << "** tobyJSCall : " << ret;
+  data = tobyJSCall(isolate, "__c", "");
+  if (data != NULL) {
+    cout << "** tobyJSCall : " << data;
+    free(data);
+  }
+
   cout << "\e[0m" << endl << flush;
 }
 
-extern "C" char* tobyHostCall(const char* name, const char* value) {
+extern "C" char* tobyHostCall(void* isolate, const char* name, const char* value) {
   cout << "\e[93m" << "** from javascript. name = " << name;
   cout << " , value = " << value << "\e[0m";
   cout << endl << flush;
-  return (char*)"hi there";
+
+  char* data = new char[10];
+  strcpy(data, "hi there");
+  return data;
 }
 
 
