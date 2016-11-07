@@ -162,6 +162,33 @@ static void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(result);
 }
 
+static void _tobyInit(Isolate* isolate) {
+  const char* source = "(function(){})();";
+
+  Local<Value> result;
+  HandleScope handle_scope(isolate);
+  TryCatch try_catch(isolate);
+
+  Local<Context> context(isolate->GetCurrentContext());
+
+  Local<String> script = String::NewFromUtf8(isolate, source);
+  Local<Script> compiled_script;
+  if (!Script::Compile(context, script).ToLocal(&compiled_script)) {
+    String::Utf8Value error(try_catch.Exception());
+    // printf("%s", *error);
+    return;
+  }
+
+  if (!compiled_script->Run(context).ToLocal(&result)) {
+    String::Utf8Value error(try_catch.Exception());
+    // printf("%s", *error);
+    return;
+  }
+
+  // result = Stringify(isolate, context, result);
+  // v8::String::Utf8Value ret(result);
+}
+
 static void atExitCB(void* arg) {
   Isolate* isolate = static_cast<Isolate*>(arg);
   HandleScope handle_scope(isolate);
@@ -175,6 +202,9 @@ static void init(Local<Object> exports) {
 
   NODE_SET_METHOD(exports, "callback", CallbackMethod);
   NODE_SET_METHOD(exports, "hostCall", HostCallMethod);
+
+  // call the toby's internal Init()
+  _tobyInit(exports->GetIsolate());
 
   // call the host's OnLoad()
   tobyOnLoad(exports->GetIsolate());
