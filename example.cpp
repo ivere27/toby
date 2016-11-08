@@ -7,7 +7,7 @@
 
 using namespace std;
 
-extern "C" void toby(const char* nodePath);
+extern "C" void toby(const char* nodePath, const char* processName, const char* userScript);
 extern "C" char* tobyJSCompile(void* isolate, const char* source);
 extern "C" char* tobyJSCall(void* isolate, const char* name, const char* value);
 
@@ -51,7 +51,8 @@ extern "C" char* tobyHostCall(void* isolate, const char* name, const char* value
 
 
 int main(int argc, char *argv[]) {
-  toby("./libnode.so.51");
+  // toby(nodePath, processName, userScript)
+  toby("./libnode.so.51", argv[0], "require('./app.js');");
 
   // dummy loop
   while(true) {

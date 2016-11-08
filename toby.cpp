@@ -214,22 +214,50 @@ NODE_MODULE_CONTEXT_AWARE_BUILTIN(toby, init)
 }  // namespace
 
 
-static void _node(const char* nodePath) {
+static void _node(const char* nodePath, const char* processName, const char* userScript) {
   int (*Start)(int, char **);
   void *handle = dlopen(nodePath, RTLD_LAZY | RTLD_NODELETE);
   Start = (int (*)(int, char **))dlsym(handle, "Start");
 
+  // argv memory should be adjacent.
+  // libuv/src/unix/proctitle.c
   int _argc = 3;
   char* _argv[_argc];
 
-  _argv[0] = (char*)"./a.out";
-  _argv[1] = (char*)"-e";
-  _argv[2] = (char*)"const toby = process.binding('toby');require('./app.js');";
+  char* nodeOptions = (char*)"-e";
+  char* tobyScript = (char*)"const toby = process.binding('toby');";
+
+  int size = 0;
+  size += strlen(processName) + 1;
+  size += strlen(nodeOptions) + 1;
+  size += strlen(tobyScript) + 1;
+  size += strlen(userScript) + 1;
+
+  char* buf = new char[size];
+  int i = 0;
+
+  _argv[0] = buf+i;
+  strncpy(buf+i, processName, strlen(processName));
+  i += strlen(processName);
+  buf[++i] = '\0';
+
+  _argv[1] = buf+i;
+  strncpy(buf+i, nodeOptions, strlen(nodeOptions));
+  i += strlen(nodeOptions);
+  buf[++i] = '\0';
+
+  _argv[2] = buf+i;
+  strncpy(buf+i, tobyScript, strlen(tobyScript));
+  i += strlen(tobyScript);
+  strncpy(buf+i, userScript, strlen(userScript));
+  i += strlen(userScript);
+  buf[++i] = '\0';
+
 
   node::Start(_argc, _argv);
 }
 
-extern "C" void toby(const char* nodePath) {
-  std::thread n(_node, nodePath);
+extern "C" void toby(const char* nodePath, const char* processName, const char* userScript) {
+  std::thread n(_node, nodePath, processName, userScript);
   n.detach();
 }
