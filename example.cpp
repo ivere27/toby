@@ -10,6 +10,8 @@ using namespace std;
 extern "C" void toby(const char* nodePath, const char* processName, const char* userScript);
 extern "C" char* tobyJSCompile(void* isolate, const char* source);
 extern "C" char* tobyJSCall(void* isolate, const char* name, const char* value);
+extern "C" bool tobyJSEmit(const char* name, const char* value);
+
 
 extern "C" void tobyOnLoad(void* isolate) {
   cout << "\e[32m" << "** topyOnLoad : " << isolate << endl;
@@ -55,8 +57,10 @@ int main(int argc, char *argv[]) {
   toby("./libnode.so.51", argv[0], "require('./app.js');");
 
   // dummy loop
+  static int i = 0;
   while(true) {
     usleep(1000*1000);
+    tobyJSEmit("test", to_string(i++).c_str());
     //printf("main\n");
   }
 

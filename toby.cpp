@@ -6,6 +6,8 @@
 #include <thread>
 #include <cstring>
 
+#include <map>
+#include <queue>
 #include <vector>
 #include "node.h"
 
@@ -29,6 +31,13 @@ using v8::Context;
 using v8::Script;
 using v8::Function;
 using v8::NewStringType;
+using v8::Handle;
+using v8::Persistent;
+
+// FIXME : vardic arguments? multiple listeners?
+using Callback = std::map<std::string, Persistent<Function>>;
+static Callback eventListeners;
+static std::queue<std::tuple<std::string, std::string>> eventQueue;
 
 static Local<Value> GetValue(Isolate* isolate, Local<Context> context,
                              Local<Object> object, const char* property) {
@@ -162,6 +171,56 @@ static void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(result);
 }
 
+extern "C" bool tobyJSEmit(const char* name, const char* value) {
+  eventQueue.push(std::make_tuple(std::string(name), std::string(value)));
+  return true;
+}
+
+static void OnMethod(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  HandleScope scope(isolate);
+  //Local<Value> result = Undefined(isolate);
+
+  auto context = isolate->GetCurrentContext();
+  auto global = context->Global();
+
+  if (args[1]->IsFunction()) {
+    v8::String::Utf8Value name(args[0]);
+
+    Local<Function> callback = Local<Function>::Cast(args[1]);
+    eventListeners[std::string(*name)].Reset(isolate, callback);
+  }
+}
+
+// FIXME : temporal eventloop. need to use the libuv's async
+// node/test/addons/async-hello-world/binding.cc
+static void PollingMethod(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  HandleScope scope(isolate);
+  auto context = isolate->GetCurrentContext();
+  auto global = context->Global();
+
+  while(eventQueue.size() > 0) {
+    auto e = eventQueue.front();
+    eventQueue.pop();
+    auto name = std::get<0>(e);
+    auto value = std::get<1>(e);
+
+    if (eventListeners.count(name)) {
+      Local<Value> result;
+      std::vector<Local<Value>> argv;
+      Local<Value> argument = String::NewFromUtf8(isolate, value.c_str());
+      argv.push_back(argument);
+
+      Local<Function> callback = Local<Function>::New(isolate, eventListeners[name]);
+      result = callback->Call(global, argv.size(), argv.data());
+
+      // FIXME : remove it in removeListener()
+      //eventListeners[name].Reset();
+    }
+  }
+}
+
 static void _tobyInit(Isolate* isolate) {
   const char* source = "(function(){})();";
 
@@ -202,6 +261,8 @@ static void init(Local<Object> exports) {
 
   NODE_SET_METHOD(exports, "callback", CallbackMethod);
   NODE_SET_METHOD(exports, "hostCall", HostCallMethod);
+  NODE_SET_METHOD(exports, "_polling", PollingMethod);
+  NODE_SET_METHOD(exports, "on", OnMethod);
 
   // call the toby's internal Init()
   _tobyInit(exports->GetIsolate());
@@ -225,7 +286,8 @@ static void _node(const char* nodePath, const char* processName, const char* use
   char* _argv[_argc];
 
   char* nodeOptions = (char*)"-e";
-  char* tobyScript = (char*)"const toby = process.binding('toby');";
+  char* tobyScript = (char*)"const toby = process.binding('toby');"
+                            "setInterval(function(){toby._polling();},100);";
 
   int size = 0;
   size += strlen(processName) + 1;
