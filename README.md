@@ -32,5 +32,7 @@ clang++ toby.cpp -c -o toby.o \
 ./libnode.51.dylib toby.o \
 -ldl -lpthread \
 -g \
-&& DYLD_LIBRARY_PATH=. ./example
+&& DYLD_LIBRARY_PATH=. `pwd`/example
+
+# fixme : there's a bug when executing without the full path('pwd'/)
 ```
