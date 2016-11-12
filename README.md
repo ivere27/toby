@@ -1,4 +1,4 @@
-# Embed Node.js into C++
+# Embed Node.js into C ABI languages(C++ or Pascal or Etc..)
 
 build node.js
 ```
@@ -36,3 +36,6 @@ clang++ toby.cpp -c -o toby.o \
 
 # fixme : there's a bug when executing without the full path('pwd'/)
 ```
+
+# Sister Projects
+[node-pascal](https://github.com/ivere27/node-pascal) : Embed Node.js into Free Pascal
