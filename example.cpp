@@ -54,14 +54,13 @@ extern "C" char* tobyHostCall(void* isolate, const char* name, const char* value
 
 int main(int argc, char *argv[]) {
   // toby(nodePath, processName, userScript)
-  toby("./libnode.so.51", argv[0], "require('./app.js');");
+  toby("./libnode.so.48", argv[0], "require('./app.js');");
 
   // dummy loop
   static int i = 0;
   while(true) {
     usleep(1000*1000);
     tobyJSEmit("test", to_string(i++).c_str());
-    //printf("main\n");
   }
 
   return 0;

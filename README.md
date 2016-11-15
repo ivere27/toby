@@ -1,35 +1,35 @@
 # Embed Node.js into C ABI languages(C++ or Pascal or Etc..)
 
-build node.js
+### build node.js v6.9.1 LTS
 ```
-./configure --shared
-make
-
+$ git checkout v6.9.1
+$ ./configure --shared
+$ make
 ```
-#### copy node/out/Release/obj.target/libnode.so.51
+###### copy node/out/Release/obj.target/libnode.so.48
 
-## example
-linux
+## example - Embed Node.js into C++
+#### linux
 ```
 clang++ toby.cpp -c -o toby.o \
 --std=c++11 -fPIC \
 -I../node/deps/v8/include/ \
 -I../node/src/ -g \
 && clang++ example.cpp -o example --std=c++11 \
-./libnode.so.51 toby.o \
+./libnode.so.48 toby.o \
 -Wl,-rpath=. -ldl -lpthread \
 -g \
 && ./example
 ```
 
-mac
+#### mac
 ```
 clang++ toby.cpp -c -o toby.o \
 --std=c++11 -fPIC \
 -I../node/deps/v8/include/ \
 -I../node/src/ -g \
 && clang++ example.cpp -o example --std=c++11 \
-./libnode.51.dylib toby.o \
+./libnode.48.dylib toby.o \
 -ldl -lpthread \
 -g \
 && DYLD_LIBRARY_PATH=. `pwd`/example
