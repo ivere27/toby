@@ -5,6 +5,9 @@
 $ git checkout v6.9.1
 $ ./configure --shared
 $ make
+
+# or ./configure --shared --debug
+# for gdb/lldb debugging
 ```
 ###### copy node/out/Release/obj.target/libnode.so.48
 
@@ -30,9 +33,8 @@ clang++ toby.cpp -c -o toby.o --std=c++11 -fPIC \
 ./libnode.48.dylib toby.o \
 -ldl -lpthread -g \
 && install_name_tool -change /usr/local/lib/libnode.48.dylib libnode.48.dylib example \
-&& `pwd`/example
+&& ./example
 
-# fixme : there's a bug when executing without the full path('pwd'/)
 ```
 
 # Sister Projects

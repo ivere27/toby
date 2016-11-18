@@ -280,20 +280,25 @@ static void _node(const char* nodePath, const char* processName, const char* use
   void *handle = dlopen(nodePath, RTLD_LAZY | RTLD_NODELETE);
   Start = (int (*)(int, char **))dlsym(handle, "Start");
 
+  char* tobyScript = (char*)"const toby = process.binding('toby');"
+                            "setInterval(function(){toby._polling();},100);";
+  std::string initScript;
+  initScript += tobyScript;
+  initScript += '\n';
+  initScript += userScript;
+  initScript += '\n';
+
   // argv memory should be adjacent.
   // libuv/src/unix/proctitle.c
   int _argc = 3;
   char* _argv[_argc];
 
   char* nodeOptions = (char*)"-e";
-  char* tobyScript = (char*)"const toby = process.binding('toby');"
-                            "setInterval(function(){toby._polling();},100);";
 
   int size = 0;
   size += strlen(processName) + 1;
   size += strlen(nodeOptions) + 1;
-  size += strlen(tobyScript) + 1;
-  size += strlen(userScript) + 1;
+  size += initScript.length() + 1;
 
   char* buf = new char[size];
   int i = 0;
@@ -309,12 +314,7 @@ static void _node(const char* nodePath, const char* processName, const char* use
   buf[++i] = '\0';
 
   _argv[2] = buf+i;
-  strncpy(buf+i, tobyScript, strlen(tobyScript));
-  i += strlen(tobyScript);
-  strncpy(buf+i, userScript, strlen(userScript));
-  i += strlen(userScript);
-  buf[++i] = '\0';
-
+  strcpy(buf+i, initScript.c_str());
 
   node::Start(_argc, _argv);
 }
