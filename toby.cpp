@@ -280,7 +280,7 @@ static void _node(const char* nodePath, const char* processName, const char* use
   void *handle = dlopen(nodePath, RTLD_LAZY | RTLD_NODELETE);
   Start = (int (*)(int, char **))dlsym(handle, "Start");
 
-  char* tobyScript = (char*)"const toby = process.binding('toby');"
+  const char tobyScript[] = "const toby = process.binding('toby');"
                             "setInterval(function(){toby._polling();},100);";
   std::string initScript;
   initScript += tobyScript;
