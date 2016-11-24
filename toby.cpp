@@ -9,6 +9,9 @@
 #include <map>
 #include <queue>
 #include <vector>
+
+#include "libplatform/libplatform.h"
+#include "uv.h"
 #include "node.h"
 
 extern "C" void tobyOnLoad(void* isolate);
@@ -33,6 +36,17 @@ using v8::Function;
 using v8::NewStringType;
 using v8::Handle;
 using v8::Persistent;
+
+class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+ public:
+  virtual void* Allocate(size_t length) {
+    void* data = AllocateUninitialized(length);
+    return data == NULL ? data : memset(data, 0, length);
+  }
+  virtual void* AllocateUninitialized(size_t length) { return malloc(length); }
+  virtual void Free(void* data, size_t) { free(data); }
+};
+
 
 // FIXME : vardic arguments? multiple listeners?
 using Callback = std::map<std::string, Persistent<Function>>;
@@ -316,7 +330,46 @@ static void _node(const char* nodePath, const char* processName, const char* use
   _argv[2] = buf+i;
   strcpy(buf+i, initScript.c_str());
 
-  node::Start(_argc, _argv);
+  {
+    static uv_loop_t* loop = uv_default_loop();
+    Isolate::CreateParams create_params;
+    create_params.array_buffer_allocator = new ArrayBufferAllocator();
+    static  v8::Platform* platform_;
+    platform_ = v8::platform::CreateDefaultPlatform();  //v8_default_thread_pool_size = 4;
+    v8::V8::InitializePlatform(platform_);
+    v8::V8::Initialize();
+
+    static  Isolate* isolate = Isolate::New(create_params);
+
+    v8::Locker locker(isolate);
+    Isolate::Scope isolate_scope(isolate);
+    HandleScope handle_scope(isolate);
+    static  Local<Context> context = Context::New(isolate);
+    Context::Scope context_scope(context);
+
+    int exec_argc;
+    const char** exec_argv;
+    node::Init(&_argc, const_cast<const char**>(_argv), &exec_argc, &exec_argv);
+
+    static node::Environment* env = node::CreateEnvironment(
+        isolate, loop, context, _argc, _argv, exec_argc, exec_argv);
+
+    node::LoadEnvironment(env);
+
+    bool more;
+    do {
+      more = uv_run(loop, UV_RUN_ONCE);
+      if (more == false) {
+        node::EmitBeforeExit(env);
+
+        more = uv_loop_alive(loop);
+        if (uv_run(loop, UV_RUN_NOWAIT) != 0)
+          more = true;
+      }
+    } while (more == true);
+  }
+
+  //node::Start(_argc, _argv);
 }
 
 extern "C" void toby(const char* nodePath, const char* processName, const char* userScript) {
