@@ -31,5 +31,4 @@ var result = toby.hostCall('dory', {num, foo});
 console.log(`toby.hostCall() = ${result}`);
 
 
-//setInterval(function(){},1000); // dummy event
-// return; // exit the scope. atExitCB
+return; // exit the scope. atExitCB

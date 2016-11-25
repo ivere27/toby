@@ -6,6 +6,7 @@
 #include <thread>
 #include <cstring>
 
+#include "uv.h"
 #include <map>
 #include <queue>
 #include <vector>
@@ -47,11 +48,12 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
   virtual void Free(void* data, size_t) { free(data); }
 };
 
+static uv_loop_t* loop;
+static Isolate* __isolate;
 
 // FIXME : vardic arguments? multiple listeners?
 using Callback = std::map<std::string, Persistent<Function>>;
 static Callback eventListeners;
-static std::queue<std::tuple<std::string, std::string>> eventQueue;
 
 static Local<Value> GetValue(Isolate* isolate, Local<Context> context,
                              Local<Object> object, const char* property) {
@@ -185,8 +187,63 @@ static void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(result);
 }
 
+
+// /node/test/addons/async-hello-world/binding.cc
+struct async_req {
+  uv_work_t req;
+  std::string name;
+  std::string value;
+  v8::Isolate* isolate;
+  // v8::Persistent<v8::Function> callback;
+};
+
+void DoAsync(uv_work_t* r) {
+  async_req* req = reinterpret_cast<async_req*>(r->data);
+  // printf("DoAsync\n");
+}
+
+
+void AfterAsync(uv_work_t* r, int status) {
+  // printf("AfterAsync\n");
+  async_req* req = reinterpret_cast<async_req*>(r->data);
+
+  v8::Isolate* isolate = req->isolate;
+  auto context = isolate->GetCurrentContext();
+
+  v8::HandleScope scope(isolate);
+
+  std::vector<Local<Value>> argv;
+  Local<Value> argument = String::NewFromUtf8(isolate, req->value.c_str());  //value.c_str()
+  argv.push_back(argument);
+
+
+  v8::TryCatch try_catch(isolate);
+  Local<Value> result;
+
+  Local<Function> callback = Local<Function>::New(isolate, eventListeners[std::string("test")]);
+  result = callback->Call(context->Global(), argv.size(), argv.data());
+
+  // // cleanup
+  // req->callback.Reset();
+  delete req;
+
+  if (try_catch.HasCaught()) {
+    node::FatalException(isolate, try_catch);
+  }
+}
+
 extern "C" bool tobyJSEmit(const char* name, const char* value) {
-  eventQueue.push(std::make_tuple(std::string(name), std::string(value)));
+  async_req* req = new async_req;
+  req->req.data = req;
+  req->isolate = __isolate; // FIXME : ...
+
+  req->name = std::string(name);  // FIXME : use pointer
+  req->value = std::string(value);
+
+  uv_queue_work(loop,
+                &req->req,
+                DoAsync,
+                AfterAsync);
   return true;
 }
 
@@ -206,37 +263,39 @@ static void OnMethod(const FunctionCallbackInfo<Value>& args) {
   }
 }
 
-// FIXME : temporal eventloop. need to use the libuv's async
-// node/test/addons/async-hello-world/binding.cc
-static void PollingMethod(const FunctionCallbackInfo<Value>& args) {
-  Isolate* isolate = args.GetIsolate();
-  HandleScope scope(isolate);
-  auto context = isolate->GetCurrentContext();
-  auto global = context->Global();
+// // FIXME : temporal eventloop. need to use the libuv's async
+// // node/test/addons/async-hello-world/binding.cc
+// static void PollingMethod(const FunctionCallbackInfo<Value>& args) {
+//   Isolate* isolate = args.GetIsolate();
+//   HandleScope scope(isolate);
+//   auto context = isolate->GetCurrentContext();
+//   auto global = context->Global();
 
-  while(eventQueue.size() > 0) {
-    auto e = eventQueue.front();
-    eventQueue.pop();
-    auto name = std::get<0>(e);
-    auto value = std::get<1>(e);
+//   while(eventQueue.size() > 0) {
+//     auto e = eventQueue.front();
+//     eventQueue.pop();
+//     auto name = std::get<0>(e);
+//     auto value = std::get<1>(e);
 
-    if (eventListeners.count(name)) {
-      Local<Value> result;
-      std::vector<Local<Value>> argv;
-      Local<Value> argument = String::NewFromUtf8(isolate, value.c_str());
-      argv.push_back(argument);
+//     if (eventListeners.count(name)) {
+//       Local<Value> result;
+//       std::vector<Local<Value>> argv;
+//       Local<Value> argument = String::NewFromUtf8(isolate, value.c_str());
+//       argv.push_back(argument);
 
-      Local<Function> callback = Local<Function>::New(isolate, eventListeners[name]);
-      result = callback->Call(global, argv.size(), argv.data());
+//       Local<Function> callback = Local<Function>::New(isolate, eventListeners[name]);
+//       result = callback->Call(global, argv.size(), argv.data());
 
-      // FIXME : remove it in removeListener()
-      //eventListeners[name].Reset();
-    }
-  }
-}
+//       // FIXME : remove it in removeListener()
+//       //eventListeners[name].Reset();
+//     }
+//   }
+// }
 
 static void _tobyInit(Isolate* isolate) {
-  const char* source = "(function(){})();";
+  // dummy event. do not end the loop.
+  // FIXME : use uv_async_init!!
+  const char* source = "(function(){setInterval(function(){},1000)})();";
 
   Local<Value> result;
   HandleScope handle_scope(isolate);
@@ -275,7 +334,6 @@ static void init(Local<Object> exports) {
 
   NODE_SET_METHOD(exports, "callback", CallbackMethod);
   NODE_SET_METHOD(exports, "hostCall", HostCallMethod);
-  NODE_SET_METHOD(exports, "_polling", PollingMethod);
   NODE_SET_METHOD(exports, "on", OnMethod);
 
   // call the toby's internal Init()
@@ -294,8 +352,8 @@ static void _node(const char* nodePath, const char* processName, const char* use
   void *handle = dlopen(nodePath, RTLD_LAZY | RTLD_NODELETE);
   Start = (int (*)(int, char **))dlsym(handle, "Start");
 
-  const char tobyScript[] = "const toby = process.binding('toby');"
-                            "setInterval(function(){toby._polling();},100);";
+  const char tobyScript[] = "const toby = process.binding('toby');";
+
   std::string initScript;
   initScript += tobyScript;
   initScript += '\n';
@@ -331,7 +389,7 @@ static void _node(const char* nodePath, const char* processName, const char* use
   strcpy(buf+i, initScript.c_str());
 
   {
-    static uv_loop_t* loop = uv_default_loop();
+    loop = uv_default_loop();
     Isolate::CreateParams create_params;
     create_params.array_buffer_allocator = new ArrayBufferAllocator();
     static  v8::Platform* platform_;
@@ -339,12 +397,12 @@ static void _node(const char* nodePath, const char* processName, const char* use
     v8::V8::InitializePlatform(platform_);
     v8::V8::Initialize();
 
-    static  Isolate* isolate = Isolate::New(create_params);
+    __isolate = Isolate::New(create_params);
 
-    v8::Locker locker(isolate);
-    Isolate::Scope isolate_scope(isolate);
-    HandleScope handle_scope(isolate);
-    static  Local<Context> context = Context::New(isolate);
+    v8::Locker locker(__isolate);
+    Isolate::Scope isolate_scope(__isolate);
+    HandleScope handle_scope(__isolate);
+    static  Local<Context> context = Context::New(__isolate);
     Context::Scope context_scope(context);
 
     int exec_argc;
@@ -352,7 +410,7 @@ static void _node(const char* nodePath, const char* processName, const char* use
     node::Init(&_argc, const_cast<const char**>(_argv), &exec_argc, &exec_argv);
 
     static node::Environment* env = node::CreateEnvironment(
-        isolate, loop, context, _argc, _argv, exec_argc, exec_argv);
+        __isolate, loop, context, _argc, _argv, exec_argc, exec_argv);
 
     node::LoadEnvironment(env);
 
