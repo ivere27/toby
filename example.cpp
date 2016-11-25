@@ -17,13 +17,10 @@ extern "C" void tobyOnLoad(void* isolate) {
   cout << "\e[32m" << "** topyOnLoad : " << isolate << endl;
 
   // custom source
-  const char* source = "function __c(y) {"
-                       "  this.x = 42;"
-                       "  this.y = y;"
-                       "  return y ? y : \":)\";"
+  const char* source = "function _f(x) {"
+                       "  return x ? x : ':)';"
                        "};"
-                       "var __val = 43;"
-                       "__c(__val);";
+                       "var _v = 43;";
 
   char* data;
   data = tobyJSCompile(source);
@@ -32,7 +29,7 @@ extern "C" void tobyOnLoad(void* isolate) {
     free(data);
   }
 
-  data = tobyJSCall("__c", "");
+  data = tobyJSCall("_f", "");
   if (data != NULL) {
     cout << "** tobyJSCall : " << data;
     free(data);

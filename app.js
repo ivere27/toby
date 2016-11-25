@@ -1,29 +1,16 @@
 'ust strict'
 
-console.log(toby);
-
-
 // assgined from example.cpp
-console.log(`__val = ${__val}`);
+console.log(`node :: _v = ${_v}`);
 
 var num = 42;
 var foo = 'foo';
-global.bar = function(x) {
-  return `${foo} bar ${x}`;
-}
-var baz = function(x) {
-  console.log(`baz() = ${foo} ${x}`);
-}
 
 toby.on('test', function(x){
-  console.log(`toby.on(test) = ${x}`);
+  console.log(`node :: toby.on(test) = ${x}`);
 });
 
 var result = toby.hostCall('dory', {num, foo});
-console.log(`toby.hostCall() = ${result}`);
+console.log(`node :: toby.hostCall() = ${result}`);
 
-
-setInterval(function(){
-  toby.hostCall('dory', num++);
-},1000);
 // return; // exit the scope. atExitCB
