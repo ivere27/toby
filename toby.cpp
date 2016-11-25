@@ -80,26 +80,6 @@ static Local<Value> Stringify(Isolate* isolate, Local<Context> context,
   return result;
 }
 
-static void CallbackMethod(const FunctionCallbackInfo<Value>& args) {
-  auto isolate = args.GetIsolate();
-  Local<Value> result;
-
-  if (args[0]->IsFunction()) {
-    std::vector<Local<Value>> argv;
-    Local<Value> argument = Number::New(isolate, 0);
-    argv.push_back(argument);
-
-    auto method = args[0].As<Function>();
-    result = node::MakeCallback(isolate,
-      isolate->GetCurrentContext()->Global(), method,
-      argv.size(), argv.data());
-  }
-  else {
-    result = Undefined(isolate);
-  }
-
-  args.GetReturnValue().Set(result);
-}
 
 extern "C" char* tobyJSCompile(void* arg, const char* source) {
   Isolate* isolate = static_cast<Isolate*>(arg);
@@ -332,7 +312,6 @@ static void atExitCB(void* arg) {
 static void init(Local<Object> exports) {
   AtExit(atExitCB, exports->GetIsolate());
 
-  NODE_SET_METHOD(exports, "callback", CallbackMethod);
   NODE_SET_METHOD(exports, "hostCall", HostCallMethod);
   NODE_SET_METHOD(exports, "on", OnMethod);
 

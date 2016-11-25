@@ -1,14 +1,6 @@
 'ust strict'
 
-console.log(toby.callback());
-
-setTimeout(function(){
-  var ret = toby.callback(function(x){
-    console.log(`${x} in callback`);
-    return x;
-  });
-  console.log(ret); // x
-},500);
+console.log(toby);
 
 
 // assgined from example.cpp
