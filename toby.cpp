@@ -8,7 +8,6 @@
 
 #include "uv.h"
 #include <map>
-#include <queue>
 #include <vector>
 
 #include "libplatform/libplatform.h"
@@ -16,7 +15,7 @@
 #include "node.h"
 
 extern "C" void tobyOnLoad(void* isolate);
-extern "C" char* tobyHostCall(void* isolate, const char* key, const char* value);
+extern "C" char* tobyHostCall(const char* key, const char* value);
 
 namespace {
 
@@ -80,9 +79,8 @@ static Local<Value> Stringify(Isolate* isolate, Local<Context> context,
   return result;
 }
 
-
-extern "C" char* tobyJSCompile(void* arg, const char* source) {
-  Isolate* isolate = static_cast<Isolate*>(arg);
+extern "C" char* tobyJSCompile(const char* source) {
+  Isolate* isolate = static_cast<Isolate*>(__isolate);
   Local<Value> result;
 
   HandleScope handle_scope(isolate);
@@ -110,8 +108,8 @@ extern "C" char* tobyJSCompile(void* arg, const char* source) {
   return data;
 }
 
-extern "C" char* tobyJSCall(void* _isolate, const char* name, const char* value) {
-  Isolate* isolate = static_cast<Isolate*>(_isolate);
+extern "C" char* tobyJSCall(const char* name, const char* value) {
+  Isolate* isolate = static_cast<Isolate*>(__isolate);
 
   auto context = isolate->GetCurrentContext();
   auto global = context->Global();
@@ -160,7 +158,7 @@ static void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
     v8::String::Utf8Value value(result);
     const char* c_value = *value;
 
-    char* ret = tobyHostCall(isolate, c_key, c_value);
+    char* ret = tobyHostCall(c_key, c_value);
     result = String::NewFromUtf8(isolate, ret, NewStringType::kNormal).ToLocalChecked();
   }
 
@@ -240,37 +238,11 @@ static void OnMethod(const FunctionCallbackInfo<Value>& args) {
 
     Local<Function> callback = Local<Function>::Cast(args[1]);
     eventListeners[std::string(*name)].Reset(isolate, callback);
+
+    // FIXME : remove it in removeListener()
+    //eventListeners[name].Reset();
   }
 }
-
-// // FIXME : temporal eventloop. need to use the libuv's async
-// // node/test/addons/async-hello-world/binding.cc
-// static void PollingMethod(const FunctionCallbackInfo<Value>& args) {
-//   Isolate* isolate = args.GetIsolate();
-//   HandleScope scope(isolate);
-//   auto context = isolate->GetCurrentContext();
-//   auto global = context->Global();
-
-//   while(eventQueue.size() > 0) {
-//     auto e = eventQueue.front();
-//     eventQueue.pop();
-//     auto name = std::get<0>(e);
-//     auto value = std::get<1>(e);
-
-//     if (eventListeners.count(name)) {
-//       Local<Value> result;
-//       std::vector<Local<Value>> argv;
-//       Local<Value> argument = String::NewFromUtf8(isolate, value.c_str());
-//       argv.push_back(argument);
-
-//       Local<Function> callback = Local<Function>::New(isolate, eventListeners[name]);
-//       result = callback->Call(global, argv.size(), argv.data());
-
-//       // FIXME : remove it in removeListener()
-//       //eventListeners[name].Reset();
-//     }
-//   }
-// }
 
 static void _tobyInit(Isolate* isolate) {
   // dummy event. do not end the loop.
@@ -316,10 +288,10 @@ static void init(Local<Object> exports) {
   NODE_SET_METHOD(exports, "on", OnMethod);
 
   // call the toby's internal Init()
-  _tobyInit(exports->GetIsolate());
+  _tobyInit(__isolate);
 
   // call the host's OnLoad()
-  tobyOnLoad(exports->GetIsolate());
+  tobyOnLoad(__isolate);
 }
 
 NODE_MODULE_CONTEXT_AWARE_BUILTIN(toby, init)

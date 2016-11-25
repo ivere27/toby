@@ -8,8 +8,8 @@
 using namespace std;
 
 extern "C" void toby(const char* nodePath, const char* processName, const char* userScript);
-extern "C" char* tobyJSCompile(void* isolate, const char* source);
-extern "C" char* tobyJSCall(void* isolate, const char* name, const char* value);
+extern "C" char* tobyJSCompile(const char* source);
+extern "C" char* tobyJSCall(const char* name, const char* value);
 extern "C" bool tobyJSEmit(const char* name, const char* value);
 
 
@@ -26,13 +26,13 @@ extern "C" void tobyOnLoad(void* isolate) {
                        "__c(__val);";
 
   char* data;
-  data = tobyJSCompile(isolate, source);
+  data = tobyJSCompile(source);
   if (data != NULL) {
     cout << "** tobyJSCompile : " << data << endl;
     free(data);
   }
 
-  data = tobyJSCall(isolate, "__c", "");
+  data = tobyJSCall("__c", "");
   if (data != NULL) {
     cout << "** tobyJSCall : " << data;
     free(data);
@@ -41,7 +41,7 @@ extern "C" void tobyOnLoad(void* isolate) {
   cout << "\e[0m" << endl << flush;
 }
 
-extern "C" char* tobyHostCall(void* isolate, const char* name, const char* value) {
+extern "C" char* tobyHostCall(const char* name, const char* value) {
   cout << "\e[93m" << "** from javascript. name = " << name;
   cout << " , value = " << value << "\e[0m";
   cout << endl << flush;
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
   // toby(nodePath, processName, userScript)
   toby("./libnode.so.48", argv[0], "require('./app.js');");
 
-  // dummy loop
+  // dummy loop in host
   static int i = 0;
   while(true) {
     usleep(1000*1000);
