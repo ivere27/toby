@@ -28,7 +28,8 @@ clang++ toby.cpp -c -o toby.o \
 #### mac
 ```
 clang++ toby.cpp -c -o toby.o --std=c++11 -fPIC \
--I../node/deps/v8/include/ -I../node/src/ -g \
+-I../node/deps/v8/include/ \
+-I../node/deps/uv/include/ -I../node/src/ -g \
 && clang++ example.cpp -o example --std=c++11 \
 ./libnode.48.dylib toby.o \
 -ldl -lpthread -g \

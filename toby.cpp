@@ -6,7 +6,6 @@
 #include <thread>
 #include <cstring>
 
-#include "uv.h"
 #include <map>
 #include <vector>
 
