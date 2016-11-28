@@ -181,8 +181,15 @@ void DoAsync(uv_work_t* r) {
 
 
 void AfterAsync(uv_work_t* r, int status) {
+  // FIXME : check the node.js is still alive
+
   // printf("AfterAsync\n");
   async_req* req = reinterpret_cast<async_req*>(r->data);
+
+  if (eventListeners.count(req->name) == 0) {
+    delete req;
+    return;
+  }
 
   v8::Isolate* isolate = req->isolate;
   auto context = isolate->GetCurrentContext();
@@ -197,7 +204,7 @@ void AfterAsync(uv_work_t* r, int status) {
   v8::TryCatch try_catch(isolate);
   Local<Value> result;
 
-  Local<Function> callback = Local<Function>::New(isolate, eventListeners[std::string("test")]);
+  Local<Function> callback = Local<Function>::New(isolate, eventListeners[req->name]);
   result = callback->Call(context->Global(), argv.size(), argv.data());
 
   // // cleanup
