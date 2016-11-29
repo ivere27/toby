@@ -16,25 +16,11 @@
 extern "C" void tobyOnLoad(void* isolate);
 extern "C" char* tobyHostCall(const char* key, const char* value);
 
-namespace {
+namespace toby {
 
-using node::AtExit;
-using v8::FunctionCallbackInfo;
-using v8::Isolate;
-using v8::Local;
-using v8::Object;
-using v8::Number;
-using v8::String;
-using v8::HandleScope;
-using v8::Local;
-using v8::Value;
-using v8::TryCatch;
-using v8::Context;
-using v8::Script;
-using v8::Function;
-using v8::NewStringType;
-using v8::Handle;
-using v8::Persistent;
+using namespace std;
+using namespace node;
+using namespace v8;
 
 class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
  public:
@@ -46,8 +32,8 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
   virtual void Free(void* data, size_t) { free(data); }
 };
 
-static uv_loop_t* loop;
-static Isolate* __isolate;
+static uv_loop_t* loop = uv_default_loop();
+static Isolate* isolate_;
 
 // FIXME : vardic arguments? multiple listeners?
 using Callback = std::map<std::string, Persistent<Function>>;
@@ -79,7 +65,7 @@ static Local<Value> Stringify(Isolate* isolate, Local<Context> context,
 }
 
 extern "C" char* tobyJSCompile(const char* source) {
-  Isolate* isolate = static_cast<Isolate*>(__isolate);
+  Isolate* isolate = static_cast<Isolate*>(isolate_);
   Local<Value> result;
 
   HandleScope handle_scope(isolate);
@@ -108,7 +94,7 @@ extern "C" char* tobyJSCompile(const char* source) {
 }
 
 extern "C" char* tobyJSCall(const char* name, const char* value) {
-  Isolate* isolate = static_cast<Isolate*>(__isolate);
+  Isolate* isolate = static_cast<Isolate*>(isolate_);
 
   auto context = isolate->GetCurrentContext();
   auto global = context->Global();
@@ -219,7 +205,7 @@ void AfterAsync(uv_work_t* r, int status) {
 extern "C" bool tobyJSEmit(const char* name, const char* value) {
   async_req* req = new async_req;
   req->req.data = req;
-  req->isolate = __isolate; // FIXME : ...
+  req->isolate = isolate_; // FIXME : ...
 
   req->name = std::string(name);  // FIXME : use pointer
   req->value = std::string(value);
@@ -294,10 +280,10 @@ static void init(Local<Object> exports) {
   NODE_SET_METHOD(exports, "on", OnMethod);
 
   // call the toby's internal Init()
-  _tobyInit(__isolate);
+  _tobyInit(isolate_);
 
   // call the host's OnLoad()
-  tobyOnLoad(__isolate);
+  tobyOnLoad(isolate_);
 }
 
 NODE_MODULE_CONTEXT_AWARE_BUILTIN(toby, init)
@@ -345,49 +331,49 @@ static void _node(const char* nodePath, const char* processName, const char* use
   _argv[2] = buf+i;
   strcpy(buf+i, initScript.c_str());
 
+  //node::Start(_argc, _argv);
   {
-    loop = uv_default_loop();
-    Isolate::CreateParams create_params;
-    create_params.array_buffer_allocator = new ArrayBufferAllocator();
     static  v8::Platform* platform_;
     platform_ = v8::platform::CreateDefaultPlatform();  //v8_default_thread_pool_size = 4;
     v8::V8::InitializePlatform(platform_);
     v8::V8::Initialize();
 
-    __isolate = Isolate::New(create_params);
+    v8::Isolate::CreateParams params;
+    params.array_buffer_allocator = new toby::ArrayBufferAllocator();
 
-    v8::Locker locker(__isolate);
-    Isolate::Scope isolate_scope(__isolate);
-    HandleScope handle_scope(__isolate);
-    static  Local<Context> context = Context::New(__isolate);
-    Context::Scope context_scope(context);
+    toby::isolate_ = v8::Isolate::New(params);
+
+    v8::Locker locker(toby::isolate_);
+    v8::Isolate::Scope isolate_scope(toby::isolate_);
+    v8::HandleScope handle_scope(toby::isolate_);
+    static v8::Local<v8::Context> context = v8::Context::New(toby::isolate_);
+    v8::Context::Scope context_scope(context);
 
     int exec_argc;
     const char** exec_argv;
     node::Init(&_argc, const_cast<const char**>(_argv), &exec_argc, &exec_argv);
 
     static node::Environment* env = node::CreateEnvironment(
-        __isolate, loop, context, _argc, _argv, exec_argc, exec_argv);
+        toby::isolate_, toby::loop, context, _argc, _argv, exec_argc, exec_argv);
 
     node::LoadEnvironment(env);
 
     bool more;
     do {
-      more = uv_run(loop, UV_RUN_ONCE);
+      more = uv_run(toby::loop, UV_RUN_ONCE);
       if (more == false) {
         node::EmitBeforeExit(env);
 
-        more = uv_loop_alive(loop);
-        if (uv_run(loop, UV_RUN_NOWAIT) != 0)
+        more = uv_loop_alive(toby::loop);
+        if (uv_run(toby::loop, UV_RUN_NOWAIT) != 0)
           more = true;
       }
     } while (more == true);
   }
 
-  //node::Start(_argc, _argv);
 }
 
-extern "C" void toby(const char* nodePath, const char* processName, const char* userScript) {
+extern "C" void tobyInit(const char* nodePath, const char* processName, const char* userScript) {
   std::thread n(_node, nodePath, processName, userScript);
   n.detach();
 }
