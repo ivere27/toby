@@ -333,7 +333,7 @@ static void _node(const char* nodePath, const char* processName, const char* use
 
   //node::Start(_argc, _argv);
   {
-    static  v8::Platform* platform_;
+    static v8::Platform* platform_;
     platform_ = v8::platform::CreateDefaultPlatform();  //v8_default_thread_pool_size = 4;
     v8::V8::InitializePlatform(platform_);
     v8::V8::Initialize();
@@ -342,6 +342,9 @@ static void _node(const char* nodePath, const char* processName, const char* use
     params.array_buffer_allocator = new toby::ArrayBufferAllocator();
 
     toby::isolate_ = v8::Isolate::New(params);
+    // // FIXME : check isolate is null or not
+    // if (isolate == nullptr)
+    //   return 12;  // Signal internal error.
 
     v8::Locker locker(toby::isolate_);
     v8::Isolate::Scope isolate_scope(toby::isolate_);
@@ -360,8 +363,10 @@ static void _node(const char* nodePath, const char* processName, const char* use
 
     bool more;
     do {
+      v8::platform::PumpMessageLoop(platform_, toby::isolate_);
       more = uv_run(toby::loop, UV_RUN_ONCE);
       if (more == false) {
+        v8::platform::PumpMessageLoop(platform_, toby::isolate_);
         node::EmitBeforeExit(env);
 
         more = uv_loop_alive(toby::loop);
@@ -369,8 +374,13 @@ static void _node(const char* nodePath, const char* processName, const char* use
           more = true;
       }
     } while (more == true);
-  }
 
+    // FIXME : not reached
+    // due to 'setInterval(function(){},1000)' in _tobyInit
+    const int exit_code = node::EmitExit(env);
+    node::RunAtExit(env);
+    //return exit_code;
+  }
 }
 
 extern "C" void tobyInit(const char* nodePath, const char* processName, const char* userScript) {
