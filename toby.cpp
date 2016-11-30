@@ -333,52 +333,57 @@ static void _node(const char* nodePath, const char* processName, const char* use
 
   //node::Start(_argc, _argv);
   {
-    static v8::Platform* platform_;
-    platform_ = v8::platform::CreateDefaultPlatform();  //v8_default_thread_pool_size = 4;
-    v8::V8::InitializePlatform(platform_);
-    v8::V8::Initialize();
+    using namespace std;
+    using namespace node;
+    using namespace v8;
+    using namespace toby;
 
-    v8::Isolate::CreateParams params;
-    params.array_buffer_allocator = new toby::ArrayBufferAllocator();
+    static Platform* platform_;
+    platform_ = platform::CreateDefaultPlatform();  //v8_default_thread_pool_size = 4;
+    V8::InitializePlatform(platform_);
+    V8::Initialize();
 
-    toby::isolate_ = v8::Isolate::New(params);
+    Isolate::CreateParams params;
+    params.array_buffer_allocator = new ArrayBufferAllocator();
+
+    isolate_ = Isolate::New(params);
     // // FIXME : check isolate is null or not
     // if (isolate == nullptr)
     //   return 12;  // Signal internal error.
 
-    v8::Locker locker(toby::isolate_);
-    v8::Isolate::Scope isolate_scope(toby::isolate_);
-    v8::HandleScope handle_scope(toby::isolate_);
-    static v8::Local<v8::Context> context = v8::Context::New(toby::isolate_);
-    v8::Context::Scope context_scope(context);
+    Locker locker(isolate_);
+    Isolate::Scope isolate_scope(isolate_);
+    HandleScope handle_scope(isolate_);
+    static Local<Context> context = Context::New(isolate_);
+    Context::Scope context_scope(context);
 
     int exec_argc;
     const char** exec_argv;
-    node::Init(&_argc, const_cast<const char**>(_argv), &exec_argc, &exec_argv);
+    Init(&_argc, const_cast<const char**>(_argv), &exec_argc, &exec_argv);
 
-    static node::Environment* env = node::CreateEnvironment(
-        toby::isolate_, toby::loop, context, _argc, _argv, exec_argc, exec_argv);
+    static Environment* env = CreateEnvironment(
+        isolate_, loop, context, _argc, _argv, exec_argc, exec_argv);
 
-    node::LoadEnvironment(env);
+    LoadEnvironment(env);
 
     bool more;
     do {
-      v8::platform::PumpMessageLoop(platform_, toby::isolate_);
-      more = uv_run(toby::loop, UV_RUN_ONCE);
+      platform::PumpMessageLoop(platform_, isolate_);
+      more = uv_run(loop, UV_RUN_ONCE);
       if (more == false) {
-        v8::platform::PumpMessageLoop(platform_, toby::isolate_);
-        node::EmitBeforeExit(env);
+        platform::PumpMessageLoop(platform_, isolate_);
+        EmitBeforeExit(env);
 
-        more = uv_loop_alive(toby::loop);
-        if (uv_run(toby::loop, UV_RUN_NOWAIT) != 0)
+        more = uv_loop_alive(loop);
+        if (uv_run(loop, UV_RUN_NOWAIT) != 0)
           more = true;
       }
     } while (more == true);
 
     // FIXME : not reached
     // due to 'setInterval(function(){},1000)' in _tobyInit
-    const int exit_code = node::EmitExit(env);
-    node::RunAtExit(env);
+    const int exit_code = EmitExit(env);
+    RunAtExit(env);
     //return exit_code;
   }
 }
