@@ -1,5 +1,8 @@
 'ust strict'
 
+// print toby.version
+console.log(`node :: toby.version = ${toby.version}`);
+
 // assgined from example.cpp
 console.log(`node :: _v = ${_v}`);
 

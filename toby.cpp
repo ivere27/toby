@@ -13,6 +13,16 @@
 #include "uv.h"
 #include "node.h"
 
+
+#define TOBY_VERSION_MAJOR 0
+#define TOBY_VERSION_MINOR 1
+#define TOBY_VERSION_PATCH 0
+
+#define TOBY_VERSION  NODE_STRINGIFY(TOBY_VERSION_MAJOR) "." \
+                      NODE_STRINGIFY(TOBY_VERSION_MINOR) "." \
+                      NODE_STRINGIFY(TOBY_VERSION_PATCH)
+
+
 extern "C" void tobyOnLoad(void* isolate);
 extern "C" char* tobyHostCall(const char* key, const char* value);
 
@@ -278,6 +288,9 @@ static void init(Local<Object> exports) {
 
   NODE_SET_METHOD(exports, "hostCall", HostCallMethod);
   NODE_SET_METHOD(exports, "on", OnMethod);
+
+  exports->Set(String::NewFromUtf8(exports->GetIsolate(), "version"),
+               String::NewFromUtf8(exports->GetIsolate(), TOBY_VERSION));
 
   // call the toby's internal Init()
   _tobyInit(isolate_);
