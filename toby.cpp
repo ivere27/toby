@@ -249,7 +249,8 @@ static void OnMethod(const FunctionCallbackInfo<Value>& args) {
 static void _tobyInit(Isolate* isolate) {
   // dummy event. do not end the loop.
   // FIXME : use uv_async_init!!
-  const char* source = "(function(){setInterval(function(){},1000)})();";
+  const char* source = "const toby = process.binding('toby');"
+                       "(function(){setInterval(function(){},1000)})();";
 
   Local<Value> result;
   HandleScope handle_scope(isolate);
@@ -292,9 +293,6 @@ static void init(Local<Object> exports) {
   exports->Set(String::NewFromUtf8(exports->GetIsolate(), "version"),
                String::NewFromUtf8(exports->GetIsolate(), TOBY_VERSION));
 
-  // call the toby's internal Init()
-  _tobyInit(isolate_);
-
   // call the host's OnLoad()
   tobyOnLoad(isolate_);
 }
@@ -308,13 +306,7 @@ static void _node(const char* nodePath, const char* processName, const char* use
   void *handle = dlopen(nodePath, RTLD_LAZY | RTLD_NODELETE);
   Start = (int (*)(int, char **))dlsym(handle, "Start");
 
-  const char tobyScript[] = "const toby = process.binding('toby');";
-
-  std::string initScript;
-  initScript += tobyScript;
-  initScript += '\n';
-  initScript += userScript;
-  initScript += '\n';
+  std::string initScript = "// toby :)";
 
   // argv memory should be adjacent.
   // libuv/src/unix/proctitle.c
@@ -378,6 +370,11 @@ static void _node(const char* nodePath, const char* processName, const char* use
         isolate_, loop, context, _argc, _argv, exec_argc, exec_argv);
 
     LoadEnvironment(env);
+
+    /* inject the toby script / user script here */
+    toby::_tobyInit(isolate_);
+    tobyJSCompile(userScript);
+    /* */
 
     bool more;
     do {
