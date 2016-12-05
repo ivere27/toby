@@ -32,7 +32,7 @@ using namespace std;
 using namespace node;
 using namespace v8;
 
-class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+class ArrayBufferAllocator : public ArrayBuffer::Allocator {
  public:
   virtual void* Allocate(size_t length) {
     void* data = AllocateUninitialized(length);
@@ -96,7 +96,7 @@ extern "C" char* tobyJSCompile(const char* source) {
   }
 
   result = Stringify(isolate, context, result);
-  v8::String::Utf8Value ret(result);
+  String::Utf8Value ret(result);
 
   char* data = new char[ret.length()];
   strcpy(data, *ret);
@@ -128,7 +128,7 @@ extern "C" char* tobyJSCall(const char* name, const char* value) {
   }
 
   result = Stringify(isolate, context, result);
-  v8::String::Utf8Value ret(result);
+  String::Utf8Value ret(result);
 
   char* data = new char[ret.length()];
   strcpy(data, *ret);
@@ -147,10 +147,10 @@ static void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
     // FIXME : better way to serialize/deserialize?
     result = Stringify(isolate, context, args[1]);
 
-    v8::String::Utf8Value key(args[0]);
+    String::Utf8Value key(args[0]);
     const char* c_key = *key;
 
-    v8::String::Utf8Value value(result);
+    String::Utf8Value value(result);
     const char* c_value = *value;
 
     char* ret = tobyHostCall(c_key, c_value);
@@ -166,8 +166,8 @@ struct async_req {
   uv_work_t req;
   std::string name;
   std::string value;
-  v8::Isolate* isolate;
-  // v8::Persistent<v8::Function> callback;
+  Isolate* isolate;
+  // Persistent<Function> callback;
 };
 
 void DoAsync(uv_work_t* r) {
@@ -187,17 +187,17 @@ void AfterAsync(uv_work_t* r, int status) {
     return;
   }
 
-  v8::Isolate* isolate = req->isolate;
+  Isolate* isolate = req->isolate;
   auto context = isolate->GetCurrentContext();
 
-  v8::HandleScope scope(isolate);
+  HandleScope scope(isolate);
 
   std::vector<Local<Value>> argv;
   Local<Value> argument = String::NewFromUtf8(isolate, req->value.c_str());  //value.c_str()
   argv.push_back(argument);
 
 
-  v8::TryCatch try_catch(isolate);
+  TryCatch try_catch(isolate);
   Local<Value> result;
 
   Local<Function> callback = Local<Function>::New(isolate, eventListeners[req->name]);
@@ -236,7 +236,7 @@ static void OnMethod(const FunctionCallbackInfo<Value>& args) {
   auto global = context->Global();
 
   if (args[1]->IsFunction()) {
-    v8::String::Utf8Value name(args[0]);
+    String::Utf8Value name(args[0]);
 
     Local<Function> callback = Local<Function>::Cast(args[1]);
     eventListeners[std::string(*name)].Reset(isolate, callback);
@@ -273,7 +273,7 @@ static void _tobyInit(Isolate* isolate) {
   }
 
   // result = Stringify(isolate, context, result);
-  // v8::String::Utf8Value ret(result);
+  // String::Utf8Value ret(result);
 }
 
 static void atExitCB(void* arg) {
