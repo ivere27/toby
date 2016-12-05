@@ -69,7 +69,7 @@ static Local<Value> Stringify(Isolate* isolate, Local<Context> context,
   argv.push_back(object);
 
   auto method = stringify.As<Function>();
-  result = node::MakeCallback(isolate, global, method, argv.size(), argv.data());
+  result = MakeCallback(isolate, global, method, argv.size(), argv.data());
 
   return result;
 }
@@ -118,7 +118,7 @@ extern "C" char* tobyJSCall(const char* name, const char* value) {
     argv.push_back(argument);
 
     auto method = func.As<Function>();
-    result = node::MakeCallback(isolate,
+    result = MakeCallback(isolate,
       isolate->GetCurrentContext()->Global(), method,
       argv.size(), argv.data());
   }
@@ -208,7 +208,7 @@ void AfterAsync(uv_work_t* r, int status) {
   delete req;
 
   if (try_catch.HasCaught()) {
-    node::FatalException(isolate, try_catch);
+    FatalException(isolate, try_catch);
   }
 }
 
