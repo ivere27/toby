@@ -301,11 +301,7 @@ NODE_MODULE_CONTEXT_AWARE_BUILTIN(toby, init)
 }  // namespace
 
 
-static void _node(const char* nodePath, const char* processName, const char* userScript) {
-  int (*Start)(int, char **);
-  void *handle = dlopen(nodePath, RTLD_LAZY | RTLD_NODELETE);
-  Start = (int (*)(int, char **))dlsym(handle, "Start");
-
+static void _node(const char* processName, const char* userScript) {
   // argv memory should be adjacent.
   // libuv/src/unix/proctitle.c
   int _argc = 3;
@@ -339,7 +335,6 @@ static void _node(const char* nodePath, const char* processName, const char* use
   i += strlen(evalScript);
   buf[++i] = '\0';
 
-  //node::Start(_argc, _argv);
   {
     using namespace std;
     using namespace node;
@@ -401,7 +396,7 @@ static void _node(const char* nodePath, const char* processName, const char* use
   }
 }
 
-extern "C" void tobyInit(const char* nodePath, const char* processName, const char* userScript) {
-  std::thread n(_node, nodePath, processName, userScript);
+extern "C" void tobyInit(const char* processName, const char* userScript) {
+  std::thread n(_node, processName, userScript);
   n.detach();
 }
