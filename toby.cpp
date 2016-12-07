@@ -306,19 +306,20 @@ static void _node(const char* nodePath, const char* processName, const char* use
   void *handle = dlopen(nodePath, RTLD_LAZY | RTLD_NODELETE);
   Start = (int (*)(int, char **))dlsym(handle, "Start");
 
-  std::string initScript = "// toby :)";
-
   // argv memory should be adjacent.
   // libuv/src/unix/proctitle.c
   int _argc = 3;
   char* _argv[_argc];
 
-  char* nodeOptions = (char*)"-e";
+  // FIXME : leave empty string in evalScript(-e "")
+  // there's a bug in OSX(such as, "bad option: -e?")
+  char evalScript[] = "";
+  char nodeOptions[] = "-e";
 
   int size = 0;
   size += strlen(processName) + 1;
   size += strlen(nodeOptions) + 1;
-  size += initScript.length() + 1;
+  size += strlen(evalScript) + 1;
 
   char* buf = new char[size];
   int i = 0;
@@ -334,7 +335,9 @@ static void _node(const char* nodePath, const char* processName, const char* use
   buf[++i] = '\0';
 
   _argv[2] = buf+i;
-  strcpy(buf+i, initScript.c_str());
+  strncpy(buf+i, evalScript, strlen(evalScript));
+  i += strlen(evalScript);
+  buf[++i] = '\0';
 
   //node::Start(_argc, _argv);
   {
