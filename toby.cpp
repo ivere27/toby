@@ -16,15 +16,12 @@
 
 #define TOBY_VERSION_MAJOR 0
 #define TOBY_VERSION_MINOR 1
-#define TOBY_VERSION_PATCH 0
+#define TOBY_VERSION_PATCH 1
 
 #define TOBY_VERSION  NODE_STRINGIFY(TOBY_VERSION_MAJOR) "." \
                       NODE_STRINGIFY(TOBY_VERSION_MINOR) "." \
                       NODE_STRINGIFY(TOBY_VERSION_PATCH)
 
-
-extern "C" void tobyOnLoad(void* isolate);
-extern "C" char* tobyHostCall(const char* key, const char* value);
 
 namespace toby {
 
@@ -44,6 +41,11 @@ class ArrayBufferAllocator : public ArrayBuffer::Allocator {
 
 static uv_loop_t* loop = uv_default_loop();
 static Isolate* isolate_;
+
+typedef void  (*TobyOnloadCallback)(void*);
+typedef char* (*TobyHostCallCallback)(const char*, const char*);
+TobyOnloadCallback tobyOnLoad;
+TobyHostCallCallback tobyHostCall;
 
 // FIXME : vardic arguments? multiple listeners?
 using Callback = std::map<std::string, Persistent<Function>>;
@@ -396,7 +398,14 @@ static void _node(const char* processName, const char* userScript) {
   }
 }
 
-extern "C" void tobyInit(const char* processName, const char* userScript) {
+extern "C" void tobyInit(const char* processName,
+                         const char* userScript,
+                         toby::TobyOnloadCallback _tobyOnLoad,
+                         toby::TobyHostCallCallback _tobyHostCall) {
+  toby::tobyOnLoad = _tobyOnLoad;
+  toby::tobyHostCall = _tobyHostCall;
+
+  // start the node.js in a thread
   std::thread n(_node, processName, userScript);
   n.detach();
 }

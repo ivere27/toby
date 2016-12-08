@@ -5,13 +5,19 @@
 
 using namespace std;
 
-extern "C" void tobyInit(const char* processName, const char* userScript);
+typedef void  (*TobyOnloadCB)(void* isolate);
+typedef char* (*TobyHostcallCB)(const char* name, const char* value);
+
+extern "C" void  tobyInit(const char* processName,
+                          const char* userScript,
+                          TobyOnloadCB,
+                          TobyHostcallCB);
 extern "C" char* tobyJSCompile(const char* source);
 extern "C" char* tobyJSCall(const char* name, const char* value);
-extern "C" bool tobyJSEmit(const char* name, const char* value);
+extern "C" bool  tobyJSEmit(const char* name, const char* value);
 
 
-extern "C" void tobyOnLoad(void* isolate) {
+void tobyOnLoad(void* isolate) {
   cout << "\e[32m" << "** topyOnLoad : " << isolate << endl;
 
   // custom source
@@ -36,7 +42,7 @@ extern "C" void tobyOnLoad(void* isolate) {
   cout << "\e[0m" << endl << flush;
 }
 
-extern "C" char* tobyHostCall(const char* name, const char* value) {
+char* tobyHostCall(const char* name, const char* value) {
   cout << "\e[93m" << "** from javascript. name = " << name;
   cout << " , value = " << value << "\e[0m";
   cout << endl << flush;
@@ -48,8 +54,13 @@ extern "C" char* tobyHostCall(const char* name, const char* value) {
 
 
 int main(int argc, char *argv[]) {
-  // toby(processName, userScript)
-  tobyInit(argv[0], "require('./app.js');");
+  const char* userScript = "require('./app.js');";
+
+  // toby(processName, userScript, onloadCB, hostCallCB)
+  tobyInit(argv[0],
+           userScript,
+           tobyOnLoad,
+           tobyHostCall);
 
   // dummy loop in host
   static int i = 0;
