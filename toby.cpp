@@ -22,12 +22,22 @@
                       NODE_STRINGIFY(TOBY_VERSION_MINOR) "." \
                       NODE_STRINGIFY(TOBY_VERSION_PATCH)
 
-
 namespace toby {
 
 using namespace std;
 using namespace node;
 using namespace v8;
+
+typedef void  (*TobyOnloadCallback)(void*);
+typedef char* (*TobyHostCallCallback)(const char*, const char*);
+
+extern "C" char* tobyJSCompile(const char* source);
+extern "C" char* tobyJSCall(const char* name, const char* value);
+extern "C" bool tobyJSEmit(const char* name, const char* value);
+extern "C" void tobyInit(const char* processName,
+                         const char* userScript,
+                         TobyOnloadCallback _tobyOnLoad,
+                         TobyHostCallCallback _tobyHostCall);
 
 class ArrayBufferAllocator : public ArrayBuffer::Allocator {
  public:
@@ -42,8 +52,6 @@ class ArrayBufferAllocator : public ArrayBuffer::Allocator {
 static uv_loop_t* loop = uv_default_loop();
 static Isolate* isolate_;
 
-typedef void  (*TobyOnloadCallback)(void*);
-typedef char* (*TobyHostCallCallback)(const char*, const char*);
 TobyOnloadCallback tobyOnLoad;
 TobyHostCallCallback tobyHostCall;
 
@@ -76,7 +84,7 @@ static Local<Value> Stringify(Isolate* isolate, Local<Context> context,
   return result;
 }
 
-extern "C" char* tobyJSCompile(const char* source) {
+char* tobyJSCompile(const char* source) {
   Isolate* isolate = static_cast<Isolate*>(isolate_);
   Local<Value> result;
 
@@ -105,7 +113,7 @@ extern "C" char* tobyJSCompile(const char* source) {
   return data;
 }
 
-extern "C" char* tobyJSCall(const char* name, const char* value) {
+char* tobyJSCall(const char* name, const char* value) {
   Isolate* isolate = static_cast<Isolate*>(isolate_);
 
   auto context = isolate->GetCurrentContext();
@@ -172,13 +180,13 @@ struct async_req {
   // Persistent<Function> callback;
 };
 
-void DoAsync(uv_work_t* r) {
+static void DoAsync(uv_work_t* r) {
   async_req* req = reinterpret_cast<async_req*>(r->data);
   // printf("DoAsync\n");
 }
 
 
-void AfterAsync(uv_work_t* r, int status) {
+static void AfterAsync(uv_work_t* r, int status) {
   // FIXME : check the node.js is still alive
 
   // printf("AfterAsync\n");
@@ -214,7 +222,7 @@ void AfterAsync(uv_work_t* r, int status) {
   }
 }
 
-extern "C" bool tobyJSEmit(const char* name, const char* value) {
+bool tobyJSEmit(const char* name, const char* value) {
   async_req* req = new async_req;
   req->req.data = req;
   req->isolate = isolate_; // FIXME : ...
@@ -300,7 +308,6 @@ static void init(Local<Object> exports) {
 }
 
 NODE_MODULE_CONTEXT_AWARE_BUILTIN(toby, init)
-}  // namespace
 
 
 static void _node(const char* processName, const char* userScript) {
@@ -398,10 +405,10 @@ static void _node(const char* processName, const char* userScript) {
   }
 }
 
-extern "C" void tobyInit(const char* processName,
-                         const char* userScript,
-                         toby::TobyOnloadCallback _tobyOnLoad,
-                         toby::TobyHostCallCallback _tobyHostCall) {
+void tobyInit(const char* processName,
+              const char* userScript,
+              TobyOnloadCallback _tobyOnLoad,
+              TobyHostCallCallback _tobyHostCall) {
   toby::tobyOnLoad = _tobyOnLoad;
   toby::tobyHostCall = _tobyHostCall;
 
@@ -409,3 +416,5 @@ extern "C" void tobyInit(const char* processName,
   std::thread n(_node, processName, userScript);
   n.detach();
 }
+
+}  // namespace toby
