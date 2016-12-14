@@ -49,7 +49,7 @@ class ArrayBufferAllocator : public ArrayBuffer::Allocator {
   virtual void Free(void* data, size_t) { free(data); }
 };
 
-static uv_loop_t* loop = uv_default_loop();
+static uv_loop_t* loop;
 static Isolate* isolate_;
 
 TobyOnloadCallback tobyOnLoad;
@@ -311,6 +311,9 @@ NODE_MODULE_CONTEXT_AWARE_BUILTIN(toby, init)
 
 
 static void _node(const char* processName, const char* userScript) {
+  // set the default event loop.
+  loop = uv_default_loop();
+
   // argv memory should be adjacent.
   // libuv/src/unix/proctitle.c
   int _argc = 3;
