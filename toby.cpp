@@ -311,9 +311,6 @@ NODE_MODULE_CONTEXT_AWARE_BUILTIN(toby, init)
 
 
 static void _node(const char* processName, const char* userScript) {
-  // set the default event loop.
-  loop = uv_default_loop();
-
   // argv memory should be adjacent.
   // libuv/src/unix/proctitle.c
   int _argc = 3;
@@ -412,6 +409,9 @@ void tobyInit(const char* processName,
               const char* userScript,
               TobyOnloadCallback _tobyOnLoad,
               TobyHostCallCallback _tobyHostCall) {
+  // set the default event loop.
+  loop = uv_default_loop();
+
   toby::tobyOnLoad = _tobyOnLoad;
   toby::tobyHostCall = _tobyHostCall;
 
