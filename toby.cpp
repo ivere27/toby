@@ -300,8 +300,11 @@ static void init(Local<Object> exports) {
   NODE_SET_METHOD(exports, "hostCall", HostCallMethod);
   NODE_SET_METHOD(exports, "on", OnMethod);
 
-  exports->Set(String::NewFromUtf8(exports->GetIsolate(), "version"),
-               String::NewFromUtf8(exports->GetIsolate(), TOBY_VERSION));
+  exports->DefineOwnProperty(
+    exports->GetIsolate()->GetCurrentContext(),
+    String::NewFromUtf8(exports->GetIsolate(), "version"),
+    String::NewFromUtf8(exports->GetIsolate(), TOBY_VERSION),
+    v8::ReadOnly).FromJust();
 
   // call the host's OnLoad()
   tobyOnLoad(isolate_);
