@@ -383,7 +383,37 @@ static void _node(const char* processName, const char* userScript) {
 
     /* inject the toby script / user script here */
     toby::_tobyInit(isolate_);
-    tobyJSCompile(userScript);
+    {
+      // 'node/lib/internal/bootstrap_node.js' is lazily loaded.
+      std::string source = "";
+      source += "process.nextTick(function() {";
+      source += userScript;
+      source += "});";
+
+      Isolate* isolate = static_cast<Isolate*>(isolate_);
+      Local<Value> result;
+
+      HandleScope handle_scope(isolate);
+      TryCatch try_catch(isolate);
+
+      Local<Context> context(isolate->GetCurrentContext());
+
+      Local<String> script = String::NewFromUtf8(isolate, source.c_str());
+      Local<Script> compiled_script;
+      if (!Script::Compile(context, script).ToLocal(&compiled_script)) {
+        String::Utf8Value error(try_catch.Exception());
+        fprintf(stderr, "Fatal Error in userScript\n%s", *error);
+        fflush(stderr);
+        return ;
+      }
+
+      if (!compiled_script->Run(context).ToLocal(&result)) {
+        String::Utf8Value error(try_catch.Exception());
+        fprintf(stderr, "Fatal Error in userScript\n%s", *error);
+        fflush(stderr);
+        return ;
+      }
+    }
     /* */
 
     bool more;
