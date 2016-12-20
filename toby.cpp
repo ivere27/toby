@@ -442,6 +442,15 @@ void tobyInit(const char* processName,
               const char* userScript,
               TobyOnloadCallback _tobyOnLoad,
               TobyHostCallCallback _tobyHostCall) {
+
+  // FIXME : need to find out another way
+  //         more info on http://dbp-consulting.com/tutorials/debugging/linuxProgramStartup.html
+  // workaround patch for freepascal. un-comment below line.
+  // the toby module won't be registered due to over-writting '__libc_csu_init'
+  // in freepascal/rtl/linux/x86_64/cprt0.as
+  //   movq __libc_csu_init@GOTPCREL(%rip), %rcx
+  //toby::_register_toby();
+
   // set the default event loop.
   loop = uv_default_loop();
 
