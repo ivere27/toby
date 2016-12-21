@@ -1,4 +1,4 @@
-'ust strict'
+'use strict'
 
 // print toby.version
 console.log(`node :: toby.version = ${toby.version}`);
