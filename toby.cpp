@@ -58,7 +58,7 @@ TobyHostCallCallback tobyHostCall;
 
 // FIXME : vardic arguments? multiple listeners?
 using Callback = std::map<std::string, Persistent<Function>>;
-static Callback eventListeners;
+static Callback *eventListeners;
 
 static Local<Value> GetValue(Isolate* isolate, Local<Context> context,
                              Local<Object> object, const char* property) {
@@ -193,7 +193,7 @@ static void AfterAsync(uv_work_t* r, int status) {
   // printf("AfterAsync\n");
   async_req* req = reinterpret_cast<async_req*>(r->data);
 
-  if (eventListeners.count(req->name) == 0) {
+  if (eventListeners->count(req->name) == 0) {
     delete req;
     return;
   }
@@ -211,7 +211,7 @@ static void AfterAsync(uv_work_t* r, int status) {
   TryCatch try_catch(isolate);
   Local<Value> result;
 
-  Local<Function> callback = Local<Function>::New(isolate, eventListeners[req->name]);
+  Local<Function> callback = Local<Function>::New(isolate, eventListeners->at(req->name));
   result = callback->Call(context->Global(), argv.size(), argv.data());
 
   // // cleanup
@@ -250,7 +250,7 @@ static void OnMethod(const FunctionCallbackInfo<Value>& args) {
     String::Utf8Value name(args[0]);
 
     Local<Function> callback = Local<Function>::Cast(args[1]);
-    eventListeners[std::string(*name)].Reset(isolate, callback);
+    (*eventListeners)[std::string(*name)].Reset(isolate, callback);
 
     // FIXME : remove it in removeListener()
     //eventListeners[name].Reset();
@@ -453,6 +453,9 @@ void tobyInit(const char* processName,
               const char* userScript,
               TobyOnloadCallback _tobyOnLoad,
               TobyHostCallCallback _tobyHostCall) {
+  // initialized the eventListeners map
+  eventListeners = new Callback;
+
   // set the default event loop.
   loop = uv_default_loop();
 
