@@ -1,6 +1,5 @@
 #include <cassert>
 #include <iostream>
-#include <dlfcn.h>
 #include <string>
 #include <unistd.h>
 #include <thread>
