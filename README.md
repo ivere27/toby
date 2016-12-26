@@ -14,14 +14,10 @@ $ make
 ## example - Embed Node.js into C++
 #### linux
 ```
-clang++ toby.cpp -c -o toby.o \
---std=c++11 -fPIC \
--I../node/deps/v8/include/ \
--I../node/src/ -g \
+clang++ toby.cpp -c -o toby.o --std=c++11 \
+-I../node/deps/v8/include/ -I../node/src/ -g \
 && clang++ example.cpp -o example --std=c++11 \
-./libnode.so.48 toby.o \
--Wl,-rpath=. -ldl -lpthread \
--g \
+./libnode.so.48 toby.o -Wl,-rpath=. -ldl -lpthread -g \
 && ./example
 ```
 
