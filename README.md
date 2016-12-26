@@ -31,7 +31,11 @@ clang++ toby.cpp -c -o toby.o --std=c++11 -fPIC \
 -ldl -lpthread -g \
 && install_name_tool -change /usr/local/lib/libnode.48.dylib libnode.48.dylib example \
 && ./example
+```
 
+### win x86 in win10 (vc++ 2015)
+```
+"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\cl.exe" toby.cpp /c -I"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include" -I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\8.1\Include\um" -I"C:\Program Files (x86)\Windows Kits\8.1\Include\shared" -I../node/deps/v8/include -I../node/deps/uv/include  -I../node/src
 ```
 
 # Sister Projects
