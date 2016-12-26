@@ -316,7 +316,7 @@ static void _node(const char* processName, const char* userScript) {
   // argv memory should be adjacent.
   // libuv/src/unix/proctitle.c
   int _argc = 3;
-  char* _argv[_argc];
+  char* _argv[3]; //_argc
 
   // FIXME : leave empty string in evalScript(-e "")
   // there's a bug in OSX(such as, "bad option: -e?")
