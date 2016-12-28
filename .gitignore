@@ -1,5 +1,6 @@
 example
 example.dSYM
+*.exp
 
 # Compiled Object files
 *.slo
