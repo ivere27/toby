@@ -1,7 +1,13 @@
 #include <cstring>
 #include <iostream>
 #include <string>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <unistd.h>
+#endif
+
 
 using namespace std;
 
@@ -65,7 +71,11 @@ int main(int argc, char *argv[]) {
   // dummy loop in host
   static int i = 0;
   while(true) {
+#ifdef _WIN32
+    Sleep(1000);
+#else
     usleep(1000*1000);
+#endif
     tobyJSEmit("test", to_string(i++).c_str());
   }
 
