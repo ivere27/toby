@@ -11,10 +11,15 @@
 #include "uv.h"
 #include "node.h"
 
+#ifdef _WIN32
+#define TOBY_EXTERN __declspec(dllexport)
+#else
+#define TOBY_EXTERN /* nothing */
+#endif
 
 #define TOBY_VERSION_MAJOR 0
 #define TOBY_VERSION_MINOR 1
-#define TOBY_VERSION_PATCH 1
+#define TOBY_VERSION_PATCH 2
 
 #define TOBY_VERSION  NODE_STRINGIFY(TOBY_VERSION_MAJOR) "." \
                       NODE_STRINGIFY(TOBY_VERSION_MINOR) "." \
@@ -29,14 +34,14 @@ using namespace v8;
 typedef void  (*TobyOnloadCallback)(void*);
 typedef char* (*TobyHostCallCallback)(const char*, const char*);
 
-extern "C" char* tobyJSCompile(const char* source);
-extern "C" char* tobyJSCall(const char* name, const char* value);
-extern "C" bool tobyJSEmit(const char* name, const char* value);
-extern "C" void tobyInit(const char* processName,
+extern "C" TOBY_EXTERN char* tobyJSCompile(const char* source);
+extern "C" TOBY_EXTERN char* tobyJSCall(const char* name, const char* value);
+extern "C" TOBY_EXTERN bool tobyJSEmit(const char* name, const char* value);
+extern "C" TOBY_EXTERN void tobyInit(const char* processName,
                          const char* userScript,
                          TobyOnloadCallback _tobyOnLoad,
                          TobyHostCallCallback _tobyHostCall);
-extern "C" void _tobyRegister();
+extern "C" TOBY_EXTERN void _tobyRegister();
 
 class ArrayBufferAllocator : public ArrayBuffer::Allocator {
  public:
