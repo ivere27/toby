@@ -35,8 +35,13 @@ clang++ toby.cpp -c -o toby.o --std=c++11 -fPIC \
 
 ### win x86 in win10 (vc++ 2015)
 ```
+vcbuild.bat dll x86
+```
+```
 # run 'Visual C++ 2015 x86 Native Build Tools Command Prompt'
 cl toby.cpp /c /MD /EHsc  -I../node/deps/v8/include -I../node/deps/uv/include  -I../node/src
+cl example.cpp /c /MD /EHsc
+link example.obj toby.obj /LIBPATH:../node/Release /LIBPATH:../node/build/Release/lib node.lib v8_libplatform.lib v8_libbase.lib WINMM.LIB
 ```
 
 # Sister Projects
