@@ -324,7 +324,6 @@ static void _node(const char* processName, const char* userScript) {
   char* _argv[3]; //_argc
 
   // FIXME : leave empty string in evalScript(-e "")
-  // there's a bug in OSX(such as, "bad option: -e?")
   char evalScript[] = "";
   char nodeOptions[] = "-e";
 
@@ -339,17 +338,17 @@ static void _node(const char* processName, const char* userScript) {
   _argv[0] = buf+i;
   strncpy(buf+i, processName, strlen(processName));
   i += strlen(processName);
-  buf[++i] = '\0';
+  buf[i++] = '\0';
 
   _argv[1] = buf+i;
   strncpy(buf+i, nodeOptions, strlen(nodeOptions));
   i += strlen(nodeOptions);
-  buf[++i] = '\0';
+  buf[i++] = '\0';
 
   _argv[2] = buf+i;
   strncpy(buf+i, evalScript, strlen(evalScript));
   i += strlen(evalScript);
-  buf[++i] = '\0';
+  buf[i++] = '\0';
 
   {
     using namespace std;
