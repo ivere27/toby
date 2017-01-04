@@ -42,6 +42,11 @@ vcbuild.bat dll x86
 cl toby.cpp /c /MD /EHsc  -I../node/deps/v8/include -I../node/deps/uv/include  -I../node/src
 cl example.cpp /c /MD /EHsc
 link example.obj toby.obj /LIBPATH:../node/Release /LIBPATH:../node/build/Release/lib node.lib v8_libplatform.lib v8_libbase.lib WINMM.LIB
+
+
+# debug
+cl toby.cpp /c /MDd /D /EHsc  -I../node/deps/v8/include -I../node/deps/uv/include  -I../node/src && cl example.cpp /c /MDd /D /EHsc && link example.obj toby.obj /LIBPATH:../node/Debug /LIBPATH:../node/build/Debug/lib node.lib v8_libplatform.lib v8_libbase.lib WINMM.LIB
+
 ```
 
 # Sister Projects
