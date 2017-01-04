@@ -260,36 +260,6 @@ static void OnMethod(const FunctionCallbackInfo<Value>& args) {
   }
 }
 
-static void _tobyInit(Isolate* isolate) {
-  // dummy event. do not end the loop.
-  // FIXME : use uv_async_init!!
-  const char* source = "const toby = process.binding('toby');"
-                       "(function(){setInterval(function(){},1000)})();";
-
-  Local<Value> result;
-  HandleScope handle_scope(isolate);
-  TryCatch try_catch(isolate);
-
-  Local<Context> context(isolate->GetCurrentContext());
-
-  Local<String> script = String::NewFromUtf8(isolate, source);
-  Local<Script> compiled_script;
-  if (!Script::Compile(context, script).ToLocal(&compiled_script)) {
-    String::Utf8Value error(try_catch.Exception());
-    // printf("%s", *error);
-    return;
-  }
-
-  if (!compiled_script->Run(context).ToLocal(&result)) {
-    String::Utf8Value error(try_catch.Exception());
-    // printf("%s", *error);
-    return;
-  }
-
-  // result = Stringify(isolate, context, result);
-  // String::Utf8Value ret(result);
-}
-
 static void atExitCB(void* arg) {
   Isolate* isolate = static_cast<Isolate*>(arg);
   HandleScope handle_scope(isolate);
@@ -313,9 +283,6 @@ static void init(Local<Object> exports) {
   // call the host's OnLoad()
   tobyOnLoad(isolate_);
 }
-
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(toby, init)
-
 
 static void _node(const char* processName, const char* userScript) {
   // argv memory should be adjacent.
@@ -385,11 +352,23 @@ static void _node(const char* processName, const char* userScript) {
     LoadEnvironment(env);
 
     /* inject the toby script / user script here */
-    toby::_tobyInit(isolate_);
+    {
+      auto global = context->Global();
+      Local<Object> tobyObject = Object::New(isolate_);
+      global->DefineOwnProperty(
+        context,
+        String::NewFromUtf8(isolate_, "toby"),
+        tobyObject,
+        static_cast<PropertyAttribute>(v8::ReadOnly | v8::DontDelete)
+      ).FromJust();
+
+      init(tobyObject);
+    }
     {
       // 'node/lib/internal/bootstrap_node.js' is lazily loaded.
       std::string source = "";
       source += "process.nextTick(function() {";
+      source += "(function(){setInterval(function(){},1000)})();";
       source += userScript;
       source += "});";
 
@@ -439,16 +418,6 @@ static void _node(const char* processName, const char* userScript) {
     RunAtExit(env);
     //return exit_code;
   }
-}
-
-void _tobyRegister() {
-  // FIXME : need to find out another way
-  //         more info on http://dbp-consulting.com/tutorials/debugging/linuxProgramStartup.html
-  // workaround patch for freepascal. un-comment below line.
-  // the toby module won't be registered due to over-writting '__libc_csu_init'
-  // in freepascal/rtl/linux/x86_64/cprt0.as
-  //   movq __libc_csu_init@GOTPCREL(%rip), %rcx
-  toby::_register_toby();
 }
 
 void tobyInit(const char* processName,
