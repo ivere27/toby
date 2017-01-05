@@ -154,6 +154,12 @@ char* tobyJSCall(const char* name, const char* value) {
 
 static void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
+
+  if (!tobyHostCall) {
+    args.GetReturnValue().Set(Undefined(isolate));
+    return;
+  }
+
   HandleScope scope(isolate);
   Local<Value> result;
 
@@ -284,7 +290,8 @@ static void init(Local<Object> exports) {
     v8::ReadOnly).FromJust();
 
   // call the host's OnLoad()
-  tobyOnLoad(isolate_);
+  if (tobyOnLoad)
+    tobyOnLoad(isolate_);
 }
 
 static void _node(const char* processName, const char* userScript) {
@@ -418,7 +425,8 @@ static void _node(const char* processName, const char* userScript) {
     RunAtExit(env);
     //return exit_code;
 
-    tobyOnUnload(isolate_, exit_code);
+    if (tobyOnUnload)
+      tobyOnUnload(isolate_, exit_code);
   }
 }
 
