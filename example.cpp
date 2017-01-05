@@ -14,11 +14,13 @@
 using namespace std;
 
 typedef void  (*TobyOnloadCB)(void* isolate);
+typedef void  (*TobyOnunloadCB)(void* isolate, int exitCode);
 typedef char* (*TobyHostcallCB)(const char* name, const char* value);
 
 extern "C" void  tobyInit(const char* processName,
                           const char* userScript,
                           TobyOnloadCB,
+                          TobyOnunloadCB,
                           TobyHostcallCB);
 extern "C" char* tobyJSCompile(const char* source);
 extern "C" char* tobyJSCall(const char* name, const char* value);
@@ -50,6 +52,12 @@ void tobyOnLoad(void* isolate) {
   cout << "\e[0m" << endl << flush;
 }
 
+void tobyOnUnload(void* isolate, int exitCode) {
+  cout << "\e[31m" << "** tobyOnUnload : " << isolate;
+  cout << " exitCode : " << exitCode << endl;
+  cout << "\e[0m" << endl << flush;
+}
+
 char* tobyHostCall(const char* name, const char* value) {
   cout << "\e[93m" << "** from javascript. name = " << name;
   cout << " , value = " << value << "\e[0m";
@@ -68,6 +76,7 @@ int main(int argc, char *argv[]) {
   tobyInit(argv[0],
            userScript,
            tobyOnLoad,
+           tobyOnUnload,
            tobyHostCall);
 
   // dummy loop in host

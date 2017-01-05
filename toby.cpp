@@ -19,7 +19,7 @@
 
 #define TOBY_VERSION_MAJOR 0
 #define TOBY_VERSION_MINOR 1
-#define TOBY_VERSION_PATCH 2
+#define TOBY_VERSION_PATCH 3
 
 #define TOBY_VERSION  NODE_STRINGIFY(TOBY_VERSION_MAJOR) "." \
                       NODE_STRINGIFY(TOBY_VERSION_MINOR) "." \
@@ -32,6 +32,7 @@ using namespace node;
 using namespace v8;
 
 typedef void  (*TobyOnloadCallback)(void*);
+typedef void  (*TobyOnunloadCallback)(void*, int);
 typedef char* (*TobyHostCallCallback)(const char*, const char*);
 
 extern "C" TOBY_EXTERN char* tobyJSCompile(const char* source);
@@ -40,6 +41,7 @@ extern "C" TOBY_EXTERN bool tobyJSEmit(const char* name, const char* value);
 extern "C" TOBY_EXTERN void tobyInit(const char* processName,
                          const char* userScript,
                          TobyOnloadCallback _tobyOnLoad,
+                         TobyOnunloadCallback _tobyOnUnload,
                          TobyHostCallCallback _tobyHostCall);
 extern "C" TOBY_EXTERN void _tobyRegister();
 
@@ -57,6 +59,7 @@ static uv_loop_t* loop;
 static Isolate* isolate_;
 
 TobyOnloadCallback tobyOnLoad;
+TobyOnunloadCallback tobyOnUnload;
 TobyHostCallCallback tobyHostCall;
 
 // FIXME : vardic arguments? multiple listeners?
@@ -368,7 +371,6 @@ static void _node(const char* processName, const char* userScript) {
       // 'node/lib/internal/bootstrap_node.js' is lazily loaded.
       std::string source = "";
       source += "process.nextTick(function() {";
-      source += "(function(){setInterval(function(){},1000)})();";
       source += userScript;
       source += "});";
 
@@ -412,17 +414,18 @@ static void _node(const char* processName, const char* userScript) {
       }
     } while (more == true);
 
-    // FIXME : not reached
-    // due to 'setInterval(function(){},1000)' in _tobyInit
     const int exit_code = EmitExit(env);
     RunAtExit(env);
     //return exit_code;
+
+    tobyOnUnload(isolate_, exit_code);
   }
 }
 
 void tobyInit(const char* processName,
               const char* userScript,
               TobyOnloadCallback _tobyOnLoad,
+              TobyOnunloadCallback _tobyOnUnload,
               TobyHostCallCallback _tobyHostCall) {
   // initialized the eventListeners map
   eventListeners = new Callback;
@@ -431,6 +434,7 @@ void tobyInit(const char* processName,
   loop = uv_default_loop();
 
   toby::tobyOnLoad = _tobyOnLoad;
+  toby::tobyOnUnload = _tobyOnUnload;
   toby::tobyHostCall = _tobyHostCall;
 
   // start the node.js in a thread
