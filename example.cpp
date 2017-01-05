@@ -4,8 +4,10 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#define SLEEP_ONE_SECOND Sleep(1000);
 #else
 #include <unistd.h>
+#define SLEEP_ONE_SECOND usleep(1000*1000);
 #endif
 
 
@@ -71,11 +73,7 @@ int main(int argc, char *argv[]) {
   // dummy loop in host
   static int i = 0;
   while(true) {
-#ifdef _WIN32
-    Sleep(1000);
-#else
-    usleep(1000*1000);
-#endif
+    SLEEP_ONE_SECOND;
     tobyJSEmit("test", to_string(i++).c_str());
   }
 
