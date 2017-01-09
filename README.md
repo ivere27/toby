@@ -1,8 +1,8 @@
 # Embed Node.js into C ABI languages(C++ or Pascal or Etc..)
 
-### build node.js v6.9.1 LTS
+### build node.js v6.9.4 LTS
 ```
-$ git checkout v6.9.1
+$ git checkout v6.9.4
 $ ./configure --shared
 $ make
 
