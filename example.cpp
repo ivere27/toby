@@ -72,7 +72,7 @@ char* tobyHostCall(const char* name, const char* value) {
 int main(int argc, char *argv[]) {
   const char* userScript = "require('./app.js');";
 
-  // toby(processName, userScript, onloadCB, hostCallCB)
+  // toby(processName, userScript, onloadCB, onunloadCB, hostCallCB)
   tobyInit(argv[0],
            userScript,
            tobyOnLoad,

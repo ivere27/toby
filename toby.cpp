@@ -446,7 +446,9 @@ void tobyInit(const char* processName,
   toby::tobyHostCall = _tobyHostCall;
 
   // start the node.js in a thread
-  std::thread n(_node, processName, userScript);
+  std::thread n(_node,
+                (!processName) ? "toby" : processName,
+                userScript);
   n.detach();
 }
 
