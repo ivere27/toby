@@ -1,5 +1,23 @@
 # Embed Node.js into C ABI languages(C++ or Pascal or Etc..)
 
+## Examples
+```c++
+#include <unistd.h>
+
+extern "C" void  tobyInit(const char*, const char*, void*, void*, char*);
+
+int main(int argc, char *argv[]) {
+  const char* userScript = "console.log(process.version)";
+  tobyInit(nullptr, userScript, nullptr, nullptr, nullptr);
+
+  usleep(1000*1000);
+  return 0;
+}
+
+// v6.9.1
+```
+
+## BUILD
 ### build node.js v6.9.4 LTS
 ```
 $ git checkout v6.9.4
