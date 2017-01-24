@@ -1,6 +1,6 @@
 # Embed Node.js into C ABI languages(C++ or Pascal or Etc..)
 
-## Examples
+## Example - Simple
 ```c++
 #include <unistd.h>
 
@@ -16,6 +16,141 @@ int main(int argc, char *argv[]) {
 
 // v6.9.1
 ```
+
+## Example - Full
+```c++
+#include <cstring>
+#include <iostream>
+#include <string>
+
+#ifdef _WIN32
+#include <windows.h>
+#define SLEEP_ONE_SECOND Sleep(1000);
+#else
+#include <unistd.h>
+#define SLEEP_ONE_SECOND usleep(1000*1000);
+#endif
+
+
+using namespace std;
+
+typedef void  (*TobyOnloadCB)(void* isolate);
+typedef void  (*TobyOnunloadCB)(void* isolate, int exitCode);
+typedef char* (*TobyHostcallCB)(const char* name, const char* value);
+
+extern "C" void  tobyInit(const char* processName,
+                          const char* userScript,
+                          TobyOnloadCB,
+                          TobyOnunloadCB,
+                          TobyHostcallCB);
+extern "C" char* tobyJSCompile(const char* source);
+extern "C" char* tobyJSCall(const char* name, const char* value);
+extern "C" bool  tobyJSEmit(const char* name, const char* value);
+
+
+void tobyOnLoad(void* isolate) {
+  cout << "\e[32m" << "** topyOnLoad : " << isolate << endl;
+
+  // custom source
+  const char* source = "function _f(x) {"
+                       "  return x ? x : ':)';"
+                       "};"
+                       "var _v = 43;";
+
+  char* data;
+  data = tobyJSCompile(source);
+  if (data != NULL) {
+    cout << "** tobyJSCompile : " << data << endl;
+    free(data);
+  }
+
+  data = tobyJSCall("_f", "");
+  if (data != NULL) {
+    cout << "** tobyJSCall : " << data;
+    free(data);
+  }
+
+  cout << "\e[0m" << endl << flush;
+}
+
+void tobyOnUnload(void* isolate, int exitCode) {
+  cout << "\e[31m" << "** tobyOnUnload : " << isolate;
+  cout << " exitCode : " << exitCode << endl;
+  cout << "\e[0m" << endl << flush;
+}
+
+char* tobyHostCall(const char* name, const char* value) {
+  cout << "\e[93m" << "** from javascript. name = " << name;
+  cout << " , value = " << value << "\e[0m";
+  cout << endl << flush;
+
+  char* data = new char[10];
+  strcpy(data, "hi there");
+  return data;
+}
+
+
+int main(int argc, char *argv[]) {
+  const char* userScript = "require('./app.js');";
+
+  // toby(processName, userScript, onloadCB, onunloadCB, hostCallCB)
+  tobyInit(argv[0],
+           userScript,
+           tobyOnLoad,
+           tobyOnUnload,
+           tobyHostCall);
+
+  // dummy loop in host
+  static int i = 0;
+  while(true) {
+    SLEEP_ONE_SECOND;
+    tobyJSEmit("test", to_string(i++).c_str());
+  }
+
+  return 0;
+}
+```
+#### app.js
+```javascript
+'use strict'
+
+// print toby.version
+console.log(`node :: toby.version = ${toby.version}`);
+
+// assgined from example.cpp
+console.log(`node :: _v = ${_v}`);
+
+var num = 42;
+var foo = 'foo';
+
+toby.on('test', function(x){
+  console.log(`node :: toby.on(test) = ${x}`);
+});
+
+var result = toby.hostCall('dory', {num, foo});
+console.log(`node :: toby.hostCall() = ${result}`);
+
+// exit after 2 secs
+(function(){setTimeout(function(){
+	process.exitCode = 42;
+},2000)})();
+```
+#### output
+```
+** topyOnLoad : 0x7f5ce4001f10
+** tobyJSCompile : undefined
+** tobyJSCall : ":)"
+node :: toby.version = 0.1.3
+node :: _v = 43
+** from javascript. name = dory , value = {"num":42,"foo":"foo"}
+node :: toby.hostCall() = hi there
+node :: toby.on(test) = 0
+node :: toby.on(test) = 1
+** tobyOnUnload : 0x7f5ce4001f10 exitCode : 42
+
+```
+
+
 
 ## BUILD
 ### build node.js v6.9.4 LTS
