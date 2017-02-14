@@ -155,7 +155,8 @@ node :: toby.on(test) = 1
 ## BUILD
 ### build node.js v6.9.4 LTS
 ```
-$ git checkout v6.9.4
+$ git clone https://github.com/nodejs/node.git
+$ cd node && git checkout v6.9.4
 $ ./configure --shared
 $ make
 
