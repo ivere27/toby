@@ -115,7 +115,7 @@ char* tobyJSCompile(const char* source) {
   result = Stringify(isolate, context, result);
   String::Utf8Value ret(result);
 
-  char* data = new char[ret.length()];
+  char* data = new char[ret.length() + 1];
   strcpy(data, *ret);
   return data;
 }
@@ -147,7 +147,7 @@ char* tobyJSCall(const char* name, const char* value) {
   result = Stringify(isolate, context, result);
   String::Utf8Value ret(result);
 
-  char* data = new char[ret.length()];
+  char* data = new char[ret.length() + 1];
   strcpy(data, *ret);
   return data;
 }
