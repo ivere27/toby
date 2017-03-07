@@ -204,4 +204,5 @@ cl toby.cpp /c /MDd /DEBUG /EHsc  -I../node/deps/v8/include -I../node/deps/uv/in
 ```
 
 # Sister Projects
-[node-pascal](https://github.com/ivere27/node-pascal) : Embed Node.js into Free Pascal
+[node-pascal](https://github.com/ivere27/node-pascal) : Embed Node.js into Free Pascal  
+[node-delphi](https://github.com/ivere27/node-delphi) : Embed Node.js into Delphi
