@@ -137,17 +137,16 @@ console.log(`node :: toby.hostCall() = ${result}`);
 ```
 #### output
 ```
-** topyOnLoad : 0x7f5ce4001f10
+** topyOnLoad : 0x7f9fe0001f10
 ** tobyJSCompile : undefined
 ** tobyJSCall : ":)"
-node :: toby.version = 0.1.3
+node :: toby.version = 0.1.5
 node :: _v = 43
 ** from javascript. name = dory , value = {"num":42,"foo":"foo"}
 node :: toby.hostCall() = hi there
 node :: toby.on(test) = 0
 node :: toby.on(test) = 1
-** tobyOnUnload : 0x7f5ce4001f10 exitCode : 42
-
+** tobyOnUnload : 0x7f9fe0001f10 exitCode : 42
 ```
 
 
