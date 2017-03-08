@@ -19,11 +19,17 @@
 
 #define TOBY_VERSION_MAJOR 0
 #define TOBY_VERSION_MINOR 1
-#define TOBY_VERSION_PATCH 3
+#define TOBY_VERSION_PATCH 5
 
 #define TOBY_VERSION  NODE_STRINGIFY(TOBY_VERSION_MAJOR) "." \
                       NODE_STRINGIFY(TOBY_VERSION_MINOR) "." \
                       NODE_STRINGIFY(TOBY_VERSION_PATCH)
+
+#define TOBY_OK              0
+#define TOBY_ERROR         (-1)
+#define TOBY_COMPILE_ERROR (-2)
+#define TOBY_RUNTIME_ERROR (-3)
+#define TOBY_BUFFER_ERROR  (-4)
 
 namespace toby {
 
@@ -35,9 +41,9 @@ typedef void  (*TobyOnloadCallback)(void*);
 typedef void  (*TobyOnunloadCallback)(void*, int);
 typedef char* (*TobyHostCallCallback)(const char*, const char*);
 
-extern "C" TOBY_EXTERN char* tobyJSCompile(const char* source);
-extern "C" TOBY_EXTERN char* tobyJSCall(const char* name, const char* value);
-extern "C" TOBY_EXTERN bool tobyJSEmit(const char* name, const char* value);
+extern "C" TOBY_EXTERN int tobyJSCompile(const char* source, char* dest, size_t n);
+extern "C" TOBY_EXTERN int tobyJSCall(const char* name, const char* value, char* dest, size_t n);
+extern "C" TOBY_EXTERN int tobyJSEmit(const char* name, const char* value);
 extern "C" TOBY_EXTERN void tobyInit(const char* processName,
                          const char* userScript,
                          TobyOnloadCallback _tobyOnLoad,
@@ -91,7 +97,7 @@ static Local<Value> Stringify(Isolate* isolate, Local<Context> context,
   return result;
 }
 
-char* tobyJSCompile(const char* source) {
+int tobyJSCompile(const char* source, char* dest, size_t n) {
   Isolate* isolate = static_cast<Isolate*>(isolate_);
   Local<Value> result;
 
@@ -104,23 +110,28 @@ char* tobyJSCompile(const char* source) {
   Local<Script> compiled_script;
   if (!Script::Compile(context, script).ToLocal(&compiled_script)) {
     String::Utf8Value error(try_catch.Exception());
-    return NULL;
+    strncpy(dest, *error, n);
+    return TOBY_COMPILE_ERROR;
   }
 
   if (!compiled_script->Run(context).ToLocal(&result)) {
     String::Utf8Value error(try_catch.Exception());
-    return NULL;
+    strncpy(dest, *error, n);
+    return TOBY_RUNTIME_ERROR;
   }
 
   result = Stringify(isolate, context, result);
   String::Utf8Value ret(result);
 
-  char* data = new char[ret.length() + 1];
-  strcpy(data, *ret);
-  return data;
+  int size = strlen(*ret);
+  strncpy(dest, *ret, n);
+  if (size >= n)
+    return TOBY_BUFFER_ERROR;
+
+  return size;  // TOBY_OK
 }
 
-char* tobyJSCall(const char* name, const char* value) {
+int tobyJSCall(const char* name, const char* value, char* dest, size_t n) {
   Isolate* isolate = static_cast<Isolate*>(isolate_);
 
   auto context = isolate->GetCurrentContext();
@@ -134,22 +145,32 @@ char* tobyJSCall(const char* name, const char* value) {
     Local<Value> argument = String::NewFromUtf8(isolate, value);
     argv.push_back(argument);
 
+    TryCatch try_catch(isolate);
+
     auto method = func.As<Function>();
     result = MakeCallback(isolate,
       isolate->GetCurrentContext()->Global(), method,
       argv.size(), argv.data());
+
+    if (try_catch.HasCaught()) {
+      String::Utf8Value error(try_catch.Exception());
+      strncpy(dest, *error, n);
+      return TOBY_RUNTIME_ERROR;
+    }
   }
   else {
     result = Undefined(isolate);
-    return NULL;
   }
 
   result = Stringify(isolate, context, result);
   String::Utf8Value ret(result);
 
-  char* data = new char[ret.length() + 1];
-  strcpy(data, *ret);
-  return data;
+  int size = strlen(*ret);
+  strncpy(dest, *ret, n);
+  if (size >= n)
+    return TOBY_BUFFER_ERROR;
+
+  return size;  // TOBY_OK
 }
 
 static void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
@@ -235,7 +256,7 @@ static void AfterAsync(uv_work_t* r, int status) {
   }
 }
 
-bool tobyJSEmit(const char* name, const char* value) {
+int tobyJSEmit(const char* name, const char* value) {
   async_req* req = new async_req;
   req->req.data = req;
   req->isolate = isolate_; // FIXME : ...
@@ -247,7 +268,7 @@ bool tobyJSEmit(const char* name, const char* value) {
                 &req->req,
                 DoAsync,
                 AfterAsync);
-  return true;
+  return TOBY_OK;
 }
 
 static void OnMethod(const FunctionCallbackInfo<Value>& args) {
