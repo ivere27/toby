@@ -1,4 +1,4 @@
-# Embed Node.js into C ABI languages(C++ or Pascal or Etc..)
+# Embed Node.js into C ABI languages(C++ or Pascal/Delphi or Etc..)
 
 ## Example - Simple
 ```c++
@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-// v6.9.1
+// v6.10.0
 ```
 
 ## Example - Full
@@ -38,14 +38,14 @@ typedef void  (*TobyOnloadCB)(void* isolate);
 typedef void  (*TobyOnunloadCB)(void* isolate, int exitCode);
 typedef char* (*TobyHostcallCB)(const char* name, const char* value);
 
-extern "C" void  tobyInit(const char* processName,
-                          const char* userScript,
-                          TobyOnloadCB,
-                          TobyOnunloadCB,
-                          TobyHostcallCB);
-extern "C" char* tobyJSCompile(const char* source);
-extern "C" char* tobyJSCall(const char* name, const char* value);
-extern "C" bool  tobyJSEmit(const char* name, const char* value);
+extern "C" void tobyInit(const char* processName,
+                         const char* userScript,
+                         TobyOnloadCB,
+                         TobyOnunloadCB,
+                         TobyHostcallCB);
+extern "C" int  tobyJSCompile(const char* source, char* dest, size_t n);
+extern "C" int  tobyJSCall(const char* name, const char* value, char* dest, size_t n);
+extern "C" int  tobyJSEmit(const char* name, const char* value);
 
 
 void tobyOnLoad(void* isolate) {
@@ -57,18 +57,18 @@ void tobyOnLoad(void* isolate) {
                        "};"
                        "var _v = 43;";
 
-  char* data;
-  data = tobyJSCompile(source);
-  if (data != NULL) {
+  char data[1024];
+  int ret = tobyJSCompile(source, data, sizeof(data));
+  if (ret < 0)
+    cout << "** tobyJSCompile error - code : " << ret << " , data : " << data << endl;
+  else
     cout << "** tobyJSCompile : " << data << endl;
-    free(data);
-  }
 
-  data = tobyJSCall("_f", "");
-  if (data != NULL) {
+  ret = tobyJSCall("_f", "", data, sizeof(data));
+  if (ret < 0)
+    cout << "** tobyJSCall error - code : " << ret << " , data : " << data << endl;
+  else
     cout << "** tobyJSCall : " << data;
-    free(data);
-  }
 
   cout << "\e[0m" << endl << flush;
 }
@@ -153,10 +153,10 @@ node :: toby.on(test) = 1
 
 
 ## BUILD
-### build node.js v6.9.4 LTS
+### build node.js v6.10.0 LTS
 ```
 $ git clone https://github.com/nodejs/node.git
-$ cd node && git checkout v6.9.4
+$ cd node && git checkout v6.10.0
 $ ./configure --shared
 $ make
 
