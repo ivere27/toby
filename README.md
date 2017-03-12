@@ -175,6 +175,7 @@ clang++ toby.cpp -c -o toby.o --std=c++11 \
 ```
 
 #### mac
+* add ```-m32``` for 32 bits
 ```
 clang++ toby.cpp -c -o toby.o --std=c++11 -fPIC \
 -I../node/deps/v8/include/ \
