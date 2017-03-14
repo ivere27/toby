@@ -49,7 +49,6 @@ extern "C" TOBY_EXTERN void tobyInit(const char* processName,
                          TobyOnloadCallback _tobyOnLoad,
                          TobyOnunloadCallback _tobyOnUnload,
                          TobyHostCallCallback _tobyHostCall);
-extern "C" TOBY_EXTERN void _tobyRegister();
 
 class ArrayBufferAllocator : public ArrayBuffer::Allocator {
  public:
