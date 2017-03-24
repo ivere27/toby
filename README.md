@@ -1,5 +1,8 @@
 # Embed Node.js into C ABI languages(C++ or Pascal/Delphi or Etc..)
 
+## Key Features
+* Integrated EventLoop(uv_default_loop) with node.js
+
 ## Example - Simple
 ```c++
 #include <unistd.h>
