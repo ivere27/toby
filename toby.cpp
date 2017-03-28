@@ -283,23 +283,34 @@ int tobyJSEmit(const char* name, const char* value) {
 static void OnMethod(const FunctionCallbackInfo<Value>& args) {
   Isolate* isolate = args.GetIsolate();
   HandleScope scope(isolate);
-  //Local<Value> result = Undefined(isolate);
 
   auto context = isolate->GetCurrentContext();
   auto global = context->Global();
 
-  if (args[1]->IsFunction()) {
-    String::Utf8Value name(args[0]);
-
-    Local<Function> callback = Local<Function>::Cast(args[1]);
-    (*eventListeners)[std::string(*name)].Reset(isolate, callback);
-
-    // FIXME : remove it in removeListener()
-    //eventListeners[name].Reset();
+  if (args.Length() != 2) {
+    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Wrong Arguments"));
+    return;
   }
+  if (!args[0]->IsString()) {
+    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Argument 1 must be a string"));
+    return;
+  }
+  if (!args[1]->IsFunction()) {
+    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Argument 2 must be a function"));
+    return;
+  }
+
+  String::Utf8Value name(args[0]);
+
+  Local<Function> callback = Local<Function>::Cast(args[1]);
+  (*eventListeners)[std::string(*name)].Reset(isolate, callback);
+
+  // FIXME : remove it in removeListener()
+  //eventListeners[name].Reset();
 }
 
 static void HostOnMethod(const FunctionCallbackInfo<Value>& args) {
+  //FIXME : check args[0] is string
   Isolate* isolate = args.GetIsolate();
   HandleScope scope(isolate);
 
