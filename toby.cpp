@@ -40,10 +40,12 @@ using namespace v8;
 typedef void  (*TobyOnloadCallback)(void*);
 typedef void  (*TobyOnunloadCallback)(void*, int);
 typedef char* (*TobyHostCallCallback)(const char*, const char*);
+typedef void  (*TobyHostonCB)(int argc, char** argv);
 
 extern "C" TOBY_EXTERN int tobyJSCompile(const char* source, char* dest, size_t n);
 extern "C" TOBY_EXTERN int tobyJSCall(const char* name, const char* value, char* dest, size_t n);
 extern "C" TOBY_EXTERN int tobyJSEmit(const char* name, const char* value);
+extern "C" TOBY_EXTERN int tobyHostOn(const char* name, TobyHostonCB);
 extern "C" TOBY_EXTERN void tobyInit(const char* processName,
                          const char* userScript,
                          TobyOnloadCallback _tobyOnLoad,
@@ -70,6 +72,9 @@ TobyHostCallCallback tobyHostCall;
 // FIXME : vardic arguments? multiple listeners?
 using Callback = std::map<std::string, Persistent<Function>>;
 static Callback *eventListeners;
+
+using HostCallback = std::map<std::string, TobyHostonCB>;
+static HostCallback *hostEventListeners;
 
 static Local<Value> GetValue(Isolate* isolate, Local<Context> context,
                              Local<Object> object, const char* property) {
@@ -170,6 +175,11 @@ int tobyJSCall(const char* name, const char* value, char* dest, size_t n) {
     return TOBY_BUFFER_ERROR;
 
   return size;  // TOBY_OK
+}
+
+int tobyHostOn(const char* name, TobyHostonCB cb) {
+  (*hostEventListeners)[std::string(name)] = cb;
+  return 0;
 }
 
 static void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
@@ -289,6 +299,47 @@ static void OnMethod(const FunctionCallbackInfo<Value>& args) {
   }
 }
 
+static void HostOnMethod(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = args.GetIsolate();
+  HandleScope scope(isolate);
+
+  auto context = isolate->GetCurrentContext();
+  auto global = context->Global();
+
+
+  Local<FunctionTemplate> ft = v8::FunctionTemplate::New(isolate,
+    [](const FunctionCallbackInfo<Value>& args) -> void {
+      Isolate* isolate = args.GetIsolate();
+      auto context = isolate->GetCurrentContext();
+      String::Utf8Value name(args.Data());
+
+      if (hostEventListeners->count(*name) == 0)
+        return;
+
+      //FIXME : better way?
+      char *cargv[args.Length()];
+      for (int i = 0; i < args.Length(); i++) {
+        Local<Value> result = Stringify(isolate, context, args[i]);
+        String::Utf8Value arg(result);
+        char *carg = new char[strlen(*arg)+1];
+        strcpy(carg, *arg);
+        cargv[i] = carg;
+      }
+
+      // call the host function
+      (*hostEventListeners)[std::string(*name)](args.Length(), cargv);
+
+      //delete
+      for (int i = 0; i < args.Length(); i++)
+        delete cargv[i];
+    }
+  , args[0]); // pass the name(args[0]) as data
+
+  v8::Local<v8::Function> fn = ft->GetFunction();
+  args.GetReturnValue().Set(fn);
+}
+
+
 static void atExitCB(void* arg) {
   Isolate* isolate = static_cast<Isolate*>(arg);
   HandleScope handle_scope(isolate);
@@ -301,6 +352,7 @@ static void init(Local<Object> exports) {
   AtExit(atExitCB, exports->GetIsolate());
 
   NODE_SET_METHOD(exports, "hostCall", HostCallMethod);
+  NODE_SET_METHOD(exports, "hostOn", HostOnMethod);
   NODE_SET_METHOD(exports, "on", OnMethod);
 
   exports->DefineOwnProperty(
@@ -457,6 +509,7 @@ void tobyInit(const char* processName,
               TobyHostCallCallback _tobyHostCall) {
   // initialized the eventListeners map
   eventListeners = new Callback;
+  hostEventListeners = new HostCallback;
 
   // set the default event loop.
   loop = uv_default_loop();

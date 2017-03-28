@@ -16,6 +16,11 @@ toby.on('test', function(x){
 var result = toby.hostCall('dory', {num, foo});
 console.log(`node :: toby.hostCall() = ${result}`);
 
+process.on('test', toby.hostOn('exit'))
+process.on('exit', toby.hostOn('exit'));
+//process.on('exit', function(code){console.log(`exit with ${code}`)});
+
+process.emit('test', 'a', 20, {num, foo});
 
 // exit after 2 secs
 (function(){setTimeout(function(){
