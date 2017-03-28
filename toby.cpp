@@ -310,13 +310,20 @@ static void OnMethod(const FunctionCallbackInfo<Value>& args) {
 }
 
 static void HostOnMethod(const FunctionCallbackInfo<Value>& args) {
-  //FIXME : check args[0] is string
   Isolate* isolate = args.GetIsolate();
   HandleScope scope(isolate);
 
   auto context = isolate->GetCurrentContext();
   auto global = context->Global();
 
+  if (args.Length() != 1) {
+    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Wrong Arguments"));
+    return;
+  }
+  if (!args[0]->IsString()) {
+    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Argument 1 must be a string"));
+    return;
+  }
 
   Local<FunctionTemplate> ft = v8::FunctionTemplate::New(isolate,
     [](const FunctionCallbackInfo<Value>& args) -> void {
