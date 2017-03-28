@@ -196,6 +196,12 @@ static void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
   auto context = isolate->GetCurrentContext();
   auto global = context->Global();
 
+  if (args.Length() == 0 || !args[0]->IsString()) {
+    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Argument 1 must be a string"));
+    return;
+  }
+
+
   {
     // FIXME : better way to serialize/deserialize?
     result = Stringify(isolate, context, args[1]);
