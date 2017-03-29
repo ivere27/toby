@@ -57,6 +57,8 @@ void tobyOnUnload(void* isolate, int exitCode) {
   cout << "\e[31m" << "** tobyOnUnload : " << isolate;
   cout << " exitCode : " << exitCode << endl;
   cout << "\e[0m" << endl << flush;
+
+  _exit(exitCode);
 }
 
 char* tobyHostCall(const char* name, const char* value) {
