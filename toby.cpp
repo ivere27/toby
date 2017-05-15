@@ -341,7 +341,7 @@ static void HostOnMethod(const FunctionCallbackInfo<Value>& args) {
         return;
 
       //FIXME : better way?
-      char *cargv[args.Length()];
+      char **cargv = new char*[args.Length()];
       for (int i = 0; i < args.Length(); i++) {
         Local<Value> result = Stringify(isolate, context, args[i]);
         String::Utf8Value arg(result);
@@ -354,8 +354,9 @@ static void HostOnMethod(const FunctionCallbackInfo<Value>& args) {
       (*hostEventListeners)[std::string(*name)](args.Length(), cargv);
 
       //delete
-      for (int i = 0; i < args.Length(); i++)
-        delete cargv[i];
+     for (int i = 0; i < args.Length(); i++)
+       delete cargv[i];
+      delete[] cargv;
     }
   , args[0]); // pass the name(args[0]) as data
 
