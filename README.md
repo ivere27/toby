@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-// v6.10.0
+// v8.9.4
 ```
 
 ## Example - Full
@@ -155,17 +155,17 @@ node :: toby.on(test) = 1
 
 
 ## BUILD
-### build node.js v6.10.0 LTS
+### build node.js v8.9.4 LTS
 ```
 $ git clone https://github.com/nodejs/node.git
-$ cd node && git checkout v6.10.0
+$ cd node && git checkout v8.9.4
 $ ./configure --shared
 $ make
 
 # or ./configure --shared --debug
 # for gdb/lldb debugging
 ```
-###### copy node/out/Release/obj.target/libnode.so.48
+###### copy node/out/Release/obj.target/libnode.so.57
 
 ## example - Embed Node.js into C++
 #### linux
@@ -173,7 +173,7 @@ $ make
 clang++ toby.cpp -c -o toby.o --std=c++11 \
 -I../node/deps/v8/include/ -I../node/src/ -g \
 && clang++ example.cpp -o example --std=c++11 \
-./libnode.so.48 toby.o -Wl,-rpath=. -ldl -lpthread -g \
+./libnode.so.57 toby.o -Wl,-rpath=. -ldl -lpthread -g \
 && ./example
 ```
 
@@ -184,9 +184,9 @@ clang++ toby.cpp -c -o toby.o --std=c++11 -fPIC \
 -I../node/deps/v8/include/ \
 -I../node/deps/uv/include/ -I../node/src/ -g \
 && clang++ example.cpp -o example --std=c++11 \
-./libnode.48.dylib toby.o \
+./libnode.57.dylib toby.o \
 -ldl -lpthread -g \
-&& install_name_tool -change /usr/local/lib/libnode.48.dylib libnode.48.dylib example \
+&& install_name_tool -change /usr/local/lib/libnode.57.dylib libnode.57.dylib example \
 && ./example
 ```
 

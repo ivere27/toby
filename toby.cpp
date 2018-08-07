@@ -52,16 +52,6 @@ extern "C" TOBY_EXTERN void tobyInit(const char* processName,
                          TobyOnunloadCallback _tobyOnUnload,
                          TobyHostCallCallback _tobyHostCall);
 
-class ArrayBufferAllocator : public ArrayBuffer::Allocator {
- public:
-  virtual void* Allocate(size_t length) {
-    void* data = AllocateUninitialized(length);
-    return data == NULL ? data : memset(data, 0, length);
-  }
-  virtual void* AllocateUninitialized(size_t length) { return malloc(length); }
-  virtual void Free(void* data, size_t) { free(data); }
-};
-
 static uv_loop_t* loop;
 static Isolate* isolate_;
 
@@ -436,7 +426,7 @@ static void _node(const char* processName, const char* userScript) {
     V8::Initialize();
 
     Isolate::CreateParams params;
-    params.array_buffer_allocator = new ArrayBufferAllocator();
+    params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 
     isolate_ = Isolate::New(params);
     // // FIXME : check isolate is null or not
@@ -453,8 +443,9 @@ static void _node(const char* processName, const char* userScript) {
     const char** exec_argv;
     Init(&_argc, const_cast<const char**>(_argv), &exec_argc, &exec_argv);
 
+    node::IsolateData* isolate_data_ = node::CreateIsolateData(isolate_, loop);
     static Environment* env = CreateEnvironment(
-        isolate_, loop, context, _argc, _argv, exec_argc, exec_argv);
+        isolate_data_, context, _argc, _argv, exec_argc, exec_argv);
 
     LoadEnvironment(env);
 
