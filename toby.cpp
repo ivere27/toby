@@ -100,22 +100,22 @@ int tobyJSCompile(const char* source, char* dest, size_t n) {
 
   Local<Context> context(isolate->GetCurrentContext());
 
-  Local<String> script = String::NewFromUtf8(isolate, source);
+  Local<String> script = String::NewFromUtf8(isolate, source).ToLocalChecked();
   Local<Script> compiled_script;
   if (!Script::Compile(context, script).ToLocal(&compiled_script)) {
-    String::Utf8Value error(try_catch.Exception());
+    String::Utf8Value error(isolate, try_catch.Exception());
     strncpy(dest, *error, n);
     return TOBY_COMPILE_ERROR;
   }
 
   if (!compiled_script->Run(context).ToLocal(&result)) {
-    String::Utf8Value error(try_catch.Exception());
+    String::Utf8Value error(isolate, try_catch.Exception());
     strncpy(dest, *error, n);
     return TOBY_RUNTIME_ERROR;
   }
 
   result = Stringify(isolate, context, result);
-  String::Utf8Value ret(result);
+  String::Utf8Value ret(isolate, result);
 
   int size = strlen(*ret);
   strncpy(dest, *ret, n);
@@ -136,7 +136,7 @@ int tobyJSCall(const char* name, const char* value, char* dest, size_t n) {
 
   if (func->IsFunction()) {
     std::vector<Local<Value>> argv;
-    Local<Value> argument = String::NewFromUtf8(isolate, value);
+    Local<Value> argument = String::NewFromUtf8(isolate, value).ToLocalChecked();
     argv.push_back(argument);
 
     TryCatch try_catch(isolate);
@@ -147,7 +147,7 @@ int tobyJSCall(const char* name, const char* value, char* dest, size_t n) {
       argv.size(), argv.data());
 
     if (try_catch.HasCaught()) {
-      String::Utf8Value error(try_catch.Exception());
+      String::Utf8Value error(isolate, try_catch.Exception());
       strncpy(dest, *error, n);
       return TOBY_RUNTIME_ERROR;
     }
@@ -157,7 +157,7 @@ int tobyJSCall(const char* name, const char* value, char* dest, size_t n) {
   }
 
   result = Stringify(isolate, context, result);
-  String::Utf8Value ret(result);
+  String::Utf8Value ret(isolate, result);
 
   int size = strlen(*ret);
   strncpy(dest, *ret, n);
@@ -187,7 +187,7 @@ static void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
   auto global = context->Global();
 
   if (args.Length() == 0 || !args[0]->IsString()) {
-    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Argument 1 must be a string"));
+    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Argument 1 must be a string").ToLocalChecked());
     return;
   }
 
@@ -196,10 +196,10 @@ static void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
     // FIXME : better way to serialize/deserialize?
     result = Stringify(isolate, context, args[1]);
 
-    String::Utf8Value key(args[0]);
+    String::Utf8Value key(isolate, args[0]);
     const char* c_key = *key;
 
-    String::Utf8Value value(result);
+    String::Utf8Value value(isolate, result);
     const char* c_value = *value;
 
     char* ret = tobyHostCall(c_key, c_value);
@@ -242,7 +242,7 @@ static void AfterAsync(uv_work_t* r, int status) {
   HandleScope scope(isolate);
 
   std::vector<Local<Value>> argv;
-  Local<Value> argument = String::NewFromUtf8(isolate, req->value.c_str());  //value.c_str()
+  Local<Value> argument = String::NewFromUtf8(isolate, req->value.c_str()).ToLocalChecked();  //value.c_str()
   argv.push_back(argument);
 
 
@@ -250,7 +250,7 @@ static void AfterAsync(uv_work_t* r, int status) {
   Local<Value> result;
 
   Local<Function> callback = Local<Function>::New(isolate, eventListeners->at(req->name));
-  result = callback->Call(context->Global(), argv.size(), argv.data());
+  result = callback->Call(context, context->Global(), argv.size(), argv.data()).ToLocalChecked();
 
   // // cleanup
   // req->callback.Reset();
@@ -284,19 +284,19 @@ static void OnMethod(const FunctionCallbackInfo<Value>& args) {
   auto global = context->Global();
 
   if (args.Length() != 2) {
-    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Wrong Arguments"));
+    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Wrong Arguments").ToLocalChecked());
     return;
   }
   if (!args[0]->IsString()) {
-    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Argument 1 must be a string"));
+    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Argument 1 must be a string").ToLocalChecked());
     return;
   }
   if (!args[1]->IsFunction()) {
-    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Argument 2 must be a function"));
+    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Argument 2 must be a function").ToLocalChecked());
     return;
   }
 
-  String::Utf8Value name(args[0]);
+  String::Utf8Value name(isolate, args[0]);
 
   Local<Function> callback = Local<Function>::Cast(args[1]);
   (*eventListeners)[std::string(*name)].Reset(isolate, callback);
@@ -313,11 +313,11 @@ static void HostOnMethod(const FunctionCallbackInfo<Value>& args) {
   auto global = context->Global();
 
   if (args.Length() != 1) {
-    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Wrong Arguments"));
+    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Wrong Arguments").ToLocalChecked());
     return;
   }
   if (!args[0]->IsString()) {
-    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Argument 1 must be a string"));
+    args.GetIsolate()->ThrowException(String::NewFromUtf8(isolate, "Argument 1 must be a string").ToLocalChecked());
     return;
   }
 
@@ -325,7 +325,7 @@ static void HostOnMethod(const FunctionCallbackInfo<Value>& args) {
     [](const FunctionCallbackInfo<Value>& args) -> void {
       Isolate* isolate = args.GetIsolate();
       auto context = isolate->GetCurrentContext();
-      String::Utf8Value name(args.Data());
+      String::Utf8Value name(isolate, args.Data());
 
       if (hostEventListeners->count(*name) == 0)
         return;
@@ -334,7 +334,7 @@ static void HostOnMethod(const FunctionCallbackInfo<Value>& args) {
       char **cargv = new char*[args.Length()];
       for (int i = 0; i < args.Length(); i++) {
         Local<Value> result = Stringify(isolate, context, args[i]);
-        String::Utf8Value arg(result);
+        String::Utf8Value arg(isolate, result);
         char *carg = new char[strlen(*arg)+1];
         strcpy(carg, *arg);
         cargv[i] = carg;
@@ -350,7 +350,7 @@ static void HostOnMethod(const FunctionCallbackInfo<Value>& args) {
     }
   , args[0]); // pass the name(args[0]) as data
 
-  v8::Local<v8::Function> fn = ft->GetFunction();
+  v8::Local<v8::Function> fn = ft->GetFunction(context).ToLocalChecked();
   args.GetReturnValue().Set(fn);
 }
 
@@ -372,8 +372,8 @@ static void init(Local<Object> exports) {
 
   exports->DefineOwnProperty(
     exports->GetIsolate()->GetCurrentContext(),
-    String::NewFromUtf8(exports->GetIsolate(), "version"),
-    String::NewFromUtf8(exports->GetIsolate(), TOBY_VERSION),
+    String::NewFromUtf8(exports->GetIsolate(), "version").ToLocalChecked(),
+    String::NewFromUtf8(exports->GetIsolate(), TOBY_VERSION).ToLocalChecked(),
     v8::ReadOnly).FromJust();
 
   // call the host's OnLoad()
@@ -420,9 +420,9 @@ static void _node(const char* processName, const char* userScript) {
     using namespace v8;
     using namespace toby;
 
-    static Platform* platform_;
-    platform_ = platform::CreateDefaultPlatform();  //v8_default_thread_pool_size = 4;
-    V8::InitializePlatform(platform_);
+    std::unique_ptr<v8::Platform> platform = v8::platform::NewDefaultPlatform();
+    v8::V8::InitializePlatform(platform.get());
+
     V8::Initialize();
 
     Isolate::CreateParams params;
@@ -455,7 +455,7 @@ static void _node(const char* processName, const char* userScript) {
       Local<Object> tobyObject = Object::New(isolate_);
       global->DefineOwnProperty(
         context,
-        String::NewFromUtf8(isolate_, "toby"),
+        String::NewFromUtf8(isolate_, "toby").ToLocalChecked(),
         tobyObject,
         static_cast<PropertyAttribute>(v8::ReadOnly | v8::DontDelete)
       ).FromJust();
@@ -477,17 +477,17 @@ static void _node(const char* processName, const char* userScript) {
 
       Local<Context> context(isolate->GetCurrentContext());
 
-      Local<String> script = String::NewFromUtf8(isolate, source.c_str());
+      Local<String> script = String::NewFromUtf8(isolate, source.c_str()).ToLocalChecked();
       Local<Script> compiled_script;
       if (!Script::Compile(context, script).ToLocal(&compiled_script)) {
-        String::Utf8Value error(try_catch.Exception());
+        String::Utf8Value error(isolate, try_catch.Exception());
         fprintf(stderr, "Fatal Error in userScript\n%s", *error);
         fflush(stderr);
         return ;
       }
 
       if (!compiled_script->Run(context).ToLocal(&result)) {
-        String::Utf8Value error(try_catch.Exception());
+        String::Utf8Value error(isolate, try_catch.Exception());
         fprintf(stderr, "Fatal Error in userScript\n%s", *error);
         fflush(stderr);
         return ;
@@ -497,10 +497,10 @@ static void _node(const char* processName, const char* userScript) {
 
     bool more;
     do {
-      platform::PumpMessageLoop(platform_, isolate_);
+      platform::PumpMessageLoop(platform.get(), isolate_);
       more = uv_run(loop, UV_RUN_ONCE);
       if (more == false) {
-        platform::PumpMessageLoop(platform_, isolate_);
+        platform::PumpMessageLoop(platform.get(), isolate_);
         EmitBeforeExit(env);
 
         more = uv_loop_alive(loop);
