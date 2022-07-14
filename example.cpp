@@ -10,23 +10,10 @@
 #define SLEEP_ONE_SECOND usleep(1000*1000);
 #endif
 
+#include "toby.h"
 
 using namespace std;
-
-typedef void  (*TobyOnloadCB)(void* isolate);
-typedef void  (*TobyOnunloadCB)(void* isolate, int exitCode);
-typedef char* (*TobyHostcallCB)(const char* name, const char* value);
-typedef void  (*TobyHostonCB)(int argc, char** argv);
-
-extern "C" void tobyInit(const char* processName,
-                         const char* userScript,
-                         TobyOnloadCB,
-                         TobyOnunloadCB,
-                         TobyHostcallCB);
-extern "C" int  tobyJSCompile(const char* source, char* dest, size_t n);
-extern "C" int  tobyJSCall(const char* name, const char* value, char* dest, size_t n);
-extern "C" int  tobyJSEmit(const char* name, const char* value);
-extern "C" int  tobyHostOn(const char* name, TobyHostonCB);
+using namespace toby;
 
 void tobyOnLoad(void* isolate) {
   cout << "\e[32m" << "** topyOnLoad : " << isolate << endl;

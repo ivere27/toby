@@ -11,11 +11,7 @@
 #include "uv.h"
 #include "node.h"
 
-#ifdef _WIN32
-#define TOBY_EXTERN __declspec(dllexport)
-#else
-#define TOBY_EXTERN /* nothing */
-#endif
+#include "toby.h"
 
 #define TOBY_VERSION_MAJOR 0
 #define TOBY_VERSION_MINOR 1
@@ -37,27 +33,12 @@ using namespace std;
 using namespace node;
 using namespace v8;
 
-typedef void  (*TobyOnloadCallback)(void*);
-typedef void  (*TobyOnunloadCallback)(void*, int);
-typedef char* (*TobyHostCallCallback)(const char*, const char*);
-typedef void  (*TobyHostonCB)(int argc, char** argv);
-
-extern "C" TOBY_EXTERN int tobyJSCompile(const char* source, char* dest, size_t n);
-extern "C" TOBY_EXTERN int tobyJSCall(const char* name, const char* value, char* dest, size_t n);
-extern "C" TOBY_EXTERN int tobyJSEmit(const char* name, const char* value);
-extern "C" TOBY_EXTERN int tobyHostOn(const char* name, TobyHostonCB);
-extern "C" TOBY_EXTERN void tobyInit(const char* processName,
-                         const char* userScript,
-                         TobyOnloadCallback _tobyOnLoad,
-                         TobyOnunloadCallback _tobyOnUnload,
-                         TobyHostCallCallback _tobyHostCall);
-
 static uv_loop_t* loop;
 static Isolate* isolate_;
 
-TobyOnloadCallback tobyOnLoad;
-TobyOnunloadCallback tobyOnUnload;
-TobyHostCallCallback tobyHostCall;
+TobyOnloadCB tobyOnLoad;
+TobyOnunloadCB tobyOnUnload;
+TobyHostcallCB tobyHostCall;
 
 // FIXME : vardic arguments? multiple listeners?
 using Callback = std::map<std::string, Persistent<Function>>;
@@ -520,9 +501,9 @@ static void _node(const char* processName, const char* userScript) {
 
 void tobyInit(const char* processName,
               const char* userScript,
-              TobyOnloadCallback _tobyOnLoad,
-              TobyOnunloadCallback _tobyOnUnload,
-              TobyHostCallCallback _tobyHostCall) {
+              TobyOnloadCB _tobyOnLoad,
+              TobyOnunloadCB _tobyOnUnload,
+              TobyHostcallCB _tobyHostCall) {
   // initialized the eventListeners map
   eventListeners = new Callback;
   hostEventListeners = new HostCallback;
