@@ -17,7 +17,7 @@ typedef void  (*TobyOnunloadCB)(void* isolate, int exitCode);
 typedef char* (*TobyHostcallCB)(const char* name, const char* value);
 typedef void  (*TobyHostonCB)(int argc, char** argv);
 
-void tobyInit(const char* processName,
+TOBY_EXTERN void tobyInit(const char* processName,
                          const char* userScript,
                          TobyOnloadCB,
                          TobyOnunloadCB,

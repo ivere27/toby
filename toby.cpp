@@ -1,7 +1,6 @@
 #include <cassert>
 #include <iostream>
 #include <string>
-#include <thread>
 #include <cstring>
 
 #include <map>
@@ -515,11 +514,9 @@ void tobyInit(const char* processName,
   toby::tobyOnUnload = _tobyOnUnload;
   toby::tobyHostCall = _tobyHostCall;
 
-  // start the node.js in a thread
-  std::thread n(_node,
-                (!processName) ? "toby" : processName,
+
+  _node((!processName) ? "toby" : processName,
                 userScript);
-  n.detach();
 }
 
 }  // namespace toby

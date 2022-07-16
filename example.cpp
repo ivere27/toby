@@ -1,6 +1,7 @@
 #include <cstring>
 #include <iostream>
 #include <string>
+#include <thread>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -16,6 +17,12 @@ using namespace std;
 using namespace toby;
 
 void tobyOnLoad(void* isolate) {
+  tobyHostOn("exit", [](int argc, char** argv){
+    printf("tobyHostOn - argc : %d\n", argc);
+    for(int i = 0; i<argc;i++)
+      printf("tobyHostOn - argv[%d] = %s\n",i, argv[i]);
+  });
+
   cout << "\e[32m" << "** topyOnLoad : " << isolate << endl;
 
   // custom source
@@ -58,22 +65,23 @@ char* tobyHostCall(const char* name, const char* value) {
   return data;
 }
 
-
-int main(int argc, char *argv[]) {
-  const char* userScript = "require('./app.js');";
-
+void _toby(const char* processName, const char* userScript) {
   // toby(processName, userScript, onloadCB, onunloadCB, hostCallCB)
-  tobyInit(argv[0],
+  tobyInit(processName,
            userScript,
            tobyOnLoad,
            tobyOnUnload,
            tobyHostCall);
+}
 
-  tobyHostOn("exit", [](int argc, char** argv){
-    printf("tobyHostOn - argc : %d\n", argc);
-    for(int i = 0; i<argc;i++)
-      printf("tobyHostOn - argv[%d] = %s\n",i, argv[i]);
-  });
+int main(int argc, char *argv[]) {
+  const char* userScript = "require('./app.js');";
+
+  // start toby in a thread
+  std::thread n(_toby,
+                argv[0],
+                userScript);
+  n.detach();
 
   // dummy loop in host
   static int i = 0;
