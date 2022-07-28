@@ -16,8 +16,8 @@
 using namespace std;
 using namespace toby;
 
-void tobyOnLoad(void* isolate) {
-  tobyHostOn("exit", [](int argc, char** argv){
+void tobyOnLoad(void* isolate, void* data) {
+  tobyHostOn("exit", [](int argc, char** argv, void* data){
     printf("tobyHostOn - argc : %d\n", argc);
     for(int i = 0; i<argc;i++)
       printf("tobyHostOn - argv[%d] = %s\n",i, argv[i]);
@@ -31,23 +31,23 @@ void tobyOnLoad(void* isolate) {
                        "};"
                        "var _v = 43;";
 
-  char data[1024];
-  int ret = tobyJSCompile(source, data, sizeof(data));
-  if (ret < 0)
-    cout << "** tobyJSCompile error - code : " << ret << " , data : " << data << endl;
+  char buf[1024];
+  int r = tobyJSCompile(source, buf, sizeof(buf));
+  if (r < 0)
+    cout << "** tobyJSCompile error - code : " << r << " , ret : " << buf << endl;
   else
-    cout << "** tobyJSCompile : " << data << endl;
+    cout << "** tobyJSCompile : " << buf << endl;
 
-  ret = tobyJSCall("_f", "", data, sizeof(data));
-  if (ret < 0)
-    cout << "** tobyJSCall error - code : " << ret << " , data : " << data << endl;
+  r = tobyJSCall("_f", "", buf, sizeof(buf));
+  if (r < 0)
+    cout << "** tobyJSCall error - code : " << r << " , ret : " << buf << endl;
   else
-    cout << "** tobyJSCall : " << data;
+    cout << "** tobyJSCall : " << buf;
 
   cout << "\e[0m" << endl << flush;
 }
 
-void tobyOnUnload(void* isolate, int exitCode) {
+void tobyOnUnload(void* isolate, int exitCode, void* data) {
   cout << "\e[31m" << "** tobyOnUnload : " << isolate;
   cout << " exitCode : " << exitCode << endl;
   cout << "\e[0m" << endl << flush;
@@ -55,14 +55,14 @@ void tobyOnUnload(void* isolate, int exitCode) {
   _exit(exitCode);
 }
 
-char* tobyHostCall(const char* name, const char* value) {
+char* tobyHostCall(const char* name, const char* value, void* data) {
   cout << "\e[93m" << "** from javascript. name = " << name;
   cout << " , value = " << value << "\e[0m";
   cout << endl << flush;
 
-  char* data = new char[10];
-  strcpy(data, "hi there");
-  return data;
+  char* buf = new char[10];
+  strcpy(buf, "hi there");
+  return buf;
 }
 
 void _toby(const char* processName, const char* userScript) {
@@ -71,7 +71,8 @@ void _toby(const char* processName, const char* userScript) {
            userScript,
            tobyOnLoad,
            tobyOnUnload,
-           tobyHostCall);
+           tobyHostCall,
+           nullptr);
 }
 
 int main(int argc, char *argv[]) {

@@ -34,6 +34,7 @@ using namespace v8;
 
 static uv_loop_t* loop;
 static Isolate* isolate_;
+static void* data = nullptr;
 
 TobyOnloadCB tobyOnLoad;
 TobyOnunloadCB tobyOnUnload;
@@ -182,7 +183,7 @@ static void HostCallMethod(const FunctionCallbackInfo<Value>& args) {
     String::Utf8Value value(isolate, result);
     const char* c_value = *value;
 
-    char* ret = tobyHostCall(c_key, c_value);
+    char* ret = tobyHostCall(c_key, c_value, data);
     result = String::NewFromUtf8(isolate, ret, NewStringType::kNormal).ToLocalChecked();
   }
 
@@ -321,7 +322,7 @@ static void HostOnMethod(const FunctionCallbackInfo<Value>& args) {
       }
 
       // call the host function
-      (*hostEventListeners)[std::string(*name)](args.Length(), cargv);
+      (*hostEventListeners)[std::string(*name)](args.Length(), cargv, data);
 
       //delete
      for (int i = 0; i < args.Length(); i++)
@@ -358,7 +359,7 @@ static void init(Local<Object> exports) {
 
   // call the host's OnLoad()
   if (tobyOnLoad)
-    tobyOnLoad(isolate_);
+    tobyOnLoad(isolate_, data);
 }
 
 static void _node(const char* processName, const char* userScript) {
@@ -494,7 +495,7 @@ static void _node(const char* processName, const char* userScript) {
     //return exit_code;
 
     if (tobyOnUnload)
-      tobyOnUnload(isolate_, exit_code);
+      tobyOnUnload(isolate_, exit_code, data);
   }
 }
 
@@ -502,7 +503,8 @@ void tobyInit(const char* processName,
               const char* userScript,
               TobyOnloadCB _tobyOnLoad,
               TobyOnunloadCB _tobyOnUnload,
-              TobyHostcallCB _tobyHostCall) {
+              TobyHostcallCB _tobyHostCall,
+              void* _data) {
   // initialized the eventListeners map
   eventListeners = new Callback;
   hostEventListeners = new HostCallback;
@@ -513,7 +515,7 @@ void tobyInit(const char* processName,
   toby::tobyOnLoad = _tobyOnLoad;
   toby::tobyOnUnload = _tobyOnUnload;
   toby::tobyHostCall = _tobyHostCall;
-
+  toby::data = _data;
 
   _node((!processName) ? "toby" : processName,
                 userScript);

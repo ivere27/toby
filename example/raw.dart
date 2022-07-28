@@ -10,14 +10,15 @@ final libraryPath = path.join(Directory.current.path, '.', 'toby.so');
 final dylib = ffi.DynamicLibrary.open(libraryPath);
 final toby = toby_binding.NativeLibrary(dylib);
 
-void hostOn(int argc, ffi.Pointer<ffi.Pointer<ffi.Char>> argv) {
+void hostOn(int argc, ffi.Pointer<ffi.Pointer<ffi.Char>> argv,
+    ffi.Pointer<ffi.Void> data) {
   print("tobyHostOn - argc : $argc");
   for (int i = 0; i < argc; i++) {
     print("tobyHostOn - argv[$i] = ${argv[i].cast<Utf8>().toDartString()}");
   }
 }
 
-void tobyOnLoad(ffi.Pointer<ffi.Void> isolate) {
+void tobyOnLoad(ffi.Pointer<ffi.Void> isolate, ffi.Pointer<ffi.Void> data) {
   print('** topyOnLoad : ${isolate.address.toRadixString(16)}');
 
   toby.tobyHostOn(
@@ -53,15 +54,16 @@ void tobyOnLoad(ffi.Pointer<ffi.Void> isolate) {
   malloc.free(dest);
 }
 
-void tobyOnUnload(ffi.Pointer<ffi.Void> isolate, int exitCode) {
+void tobyOnUnload(
+    ffi.Pointer<ffi.Void> isolate, int exitCode, ffi.Pointer<ffi.Void> data) {
   print(
       '** tobyOnUnload : ${isolate.address.toRadixString(16)} exitCode : $exitCode');
 
   exit(exitCode);
 }
 
-ffi.Pointer<ffi.Char> tobyHostCall(
-    ffi.Pointer<ffi.Char> name, ffi.Pointer<ffi.Char> value) {
+ffi.Pointer<ffi.Char> tobyHostCall(ffi.Pointer<ffi.Char> name,
+    ffi.Pointer<ffi.Char> value, ffi.Pointer<ffi.Void> data) {
   print(
       '** from javascript. name = ${name.cast<Utf8>().toDartString()} , value = ${value.cast<Utf8>().toDartString()}');
   return 'hi there'.toNativeUtf8().cast();
@@ -76,7 +78,8 @@ _toby(SendPort sendPort) async {
       userScript.toNativeUtf8().cast(),
       ffi.Pointer.fromFunction(tobyOnLoad),
       ffi.Pointer.fromFunction(tobyOnUnload),
-      ffi.Pointer.fromFunction(tobyHostCall));
+      ffi.Pointer.fromFunction(tobyHostCall),
+      ffi.nullptr);
 }
 
 void main() async {

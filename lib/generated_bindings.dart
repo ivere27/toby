@@ -1582,6 +1582,7 @@ class NativeLibrary {
     TobyOnloadCB arg2,
     TobyOnunloadCB arg3,
     TobyHostcallCB arg4,
+    ffi.Pointer<ffi.Void> data,
   ) {
     return _tobyInit(
       processName,
@@ -1589,16 +1590,22 @@ class NativeLibrary {
       arg2,
       arg3,
       arg4,
+      data,
     );
   }
 
   late final _tobyInitPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Void Function(ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>,
-              TobyOnloadCB, TobyOnunloadCB, TobyHostcallCB)>>('tobyInit');
+          ffi.Void Function(
+              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
+              TobyOnloadCB,
+              TobyOnunloadCB,
+              TobyHostcallCB,
+              ffi.Pointer<ffi.Void>)>>('tobyInit');
   late final _tobyInit = _tobyInitPtr.asFunction<
       void Function(ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>, TobyOnloadCB,
-          TobyOnunloadCB, TobyHostcallCB)>();
+          TobyOnunloadCB, TobyHostcallCB, ffi.Pointer<ffi.Void>)>();
 
   int tobyJSCompile(
     ffi.Pointer<ffi.Char> source,
@@ -1970,17 +1977,21 @@ class drand48_data extends ffi.Struct {
 typedef __compar_fn_t = ffi.Pointer<
     ffi.NativeFunction<
         ffi.Int Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Void>)>>;
-typedef TobyOnloadCB
-    = ffi.Pointer<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>;
+typedef TobyOnloadCB = ffi.Pointer<
+    ffi.NativeFunction<
+        ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Void>)>>;
 typedef TobyOnunloadCB = ffi.Pointer<
-    ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>, ffi.Int)>>;
+    ffi.NativeFunction<
+        ffi.Void Function(
+            ffi.Pointer<ffi.Void>, ffi.Int, ffi.Pointer<ffi.Void>)>>;
 typedef TobyHostcallCB = ffi.Pointer<
     ffi.NativeFunction<
-        ffi.Pointer<ffi.Char> Function(
-            ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>)>>;
+        ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>,
+            ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Void>)>>;
 typedef TobyHostonCB = ffi.Pointer<
     ffi.NativeFunction<
-        ffi.Void Function(ffi.Int, ffi.Pointer<ffi.Pointer<ffi.Char>>)>>;
+        ffi.Void Function(ffi.Int, ffi.Pointer<ffi.Pointer<ffi.Char>>,
+            ffi.Pointer<ffi.Void>)>>;
 
 const int _FEATURES_H = 1;
 
