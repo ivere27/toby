@@ -17,10 +17,10 @@ using namespace std;
 using namespace toby;
 
 void tobyOnLoad(void* isolate, void* data) {
-  tobyHostOn("exit", [](int argc, char** argv, void* data){
-    printf("tobyHostOn - argc : %d\n", argc);
+  tobyHostOn("exit", [](const char* name, int argc, char** argv, void* data){
+    printf("tobyHostOn %s - argc : %d\n", name, argc);
     for(int i = 0; i<argc;i++)
-      printf("tobyHostOn - argv[%d] = %s\n",i, argv[i]);
+      printf("tobyHostOn %s - argv[%d] = %s\n", name, i, argv[i]);
   });
 
   cout << "\e[32m" << "** topyOnLoad : " << isolate << endl;

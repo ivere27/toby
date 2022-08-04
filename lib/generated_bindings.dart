@@ -1990,8 +1990,8 @@ typedef TobyHostcallCB = ffi.Pointer<
             ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Void>)>>;
 typedef TobyHostonCB = ffi.Pointer<
     ffi.NativeFunction<
-        ffi.Void Function(ffi.Int, ffi.Pointer<ffi.Pointer<ffi.Char>>,
-            ffi.Pointer<ffi.Void>)>>;
+        ffi.Void Function(ffi.Pointer<ffi.Char>, ffi.Int,
+            ffi.Pointer<ffi.Pointer<ffi.Char>>, ffi.Pointer<ffi.Void>)>>;
 
 const int _FEATURES_H = 1;
 

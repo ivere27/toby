@@ -322,7 +322,7 @@ static void HostOnMethod(const FunctionCallbackInfo<Value>& args) {
       }
 
       // call the host function
-      (*hostEventListeners)[std::string(*name)](args.Length(), cargv, data);
+      (*hostEventListeners)[std::string(*name)](*name, args.Length(), cargv, data);
 
       //delete
      for (int i = 0; i < args.Length(); i++)

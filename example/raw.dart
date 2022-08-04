@@ -10,11 +10,12 @@ final libraryPath = path.join(Directory.current.path, '.', 'toby.so');
 final dylib = ffi.DynamicLibrary.open(libraryPath);
 final toby = toby_binding.NativeLibrary(dylib);
 
-void hostOn(int argc, ffi.Pointer<ffi.Pointer<ffi.Char>> argv,
-    ffi.Pointer<ffi.Void> data) {
-  print("tobyHostOn - argc : $argc");
+void hostOn(ffi.Pointer<ffi.Char> name, int argc,
+    ffi.Pointer<ffi.Pointer<ffi.Char>> argv, ffi.Pointer<ffi.Void> data) {
+  print("tobyHostOn ${name.cast<Utf8>().toDartString()} - argc : $argc");
   for (int i = 0; i < argc; i++) {
-    print("tobyHostOn - argv[$i] = ${argv[i].cast<Utf8>().toDartString()}");
+    print(
+        "tobyHostOn ${name.cast<Utf8>().toDartString()} - argv[$i] = ${argv[i].cast<Utf8>().toDartString()}");
   }
 }
 

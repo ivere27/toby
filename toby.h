@@ -15,7 +15,7 @@ extern "C" {
 typedef void  (*TobyOnloadCB)(void* isolate, void* data);
 typedef void  (*TobyOnunloadCB)(void* isolate, int exitCode, void* data);
 typedef char* (*TobyHostcallCB)(const char* name, const char* value, void* data);
-typedef void  (*TobyHostonCB)(int argc, char** argv, void* data);
+typedef void  (*TobyHostonCB)(const char* name, int argc, char** argv, void* data);
 
 
 TOBY_EXTERN void tobyInit(const char* processName,
